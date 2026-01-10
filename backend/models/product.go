@@ -6,8 +6,11 @@ type Product struct {
 	//ID, CreatedAt, UpdatedAt otomatis
 	gorm.Model
 	Name        string `json:"name"`
-	description string `json:"description"`
-	price       int    `json:"price"`
-	stock       int    `json:"stock"`
+	Description string `json:"description"`
+	Price       int    `json:"price"`
+	Stock       int    `json:"stock"`
+	Image       string `json:"image"`
+	UserID      uint   `json:"user_id"`
 	//json supaya bisa dibaca postman
 }
+

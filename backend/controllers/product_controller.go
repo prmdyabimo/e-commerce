@@ -5,28 +5,89 @@ import (
 	"mini-ecommerce/config"
 	"mini-ecommerce/models"
 	"net/http"
+	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
-// create product
+// =======================
+// CREATE PRODUCT
+// =======================
 func CreateProduct(c *gin.Context) {
 	var product models.Product
 
-	if err := c.ShouldBindJSON(&product); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	// ambil data text
+	product.Name = c.PostForm("name")
+	product.Description = c.PostForm("description")
+
+	price, err := strconv.Atoi(c.PostForm("price"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "price harus berupa angka"})
+		return
+	}
+	product.Price = price
+
+	stock, err := strconv.Atoi(c.PostForm("stock"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "stock harus berupa angka"})
+		return
+	}
+	product.Stock = stock
+
+	// =======================
+	// ambil user_id dari JWT middleware
+	// =======================
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
 		return
 	}
 
-	config.DB.Create(&product)
+	// JWT → float64
+	uidFloat, ok := userID.(float64)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user id type"})
+		return
+	}
+	product.UserID = uint(uidFloat)
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Produk Berhasil Ditambahkan",
+	// =======================
+	// ambil file gambar
+	// =======================
+	file, err := c.FormFile("image")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "gambar wajib di upload"})
+		return
+	}
+
+	filename := fmt.Sprintf("%d_%s", time.Now().Unix(), file.Filename)
+	filepath := "uploads/products/" + filename
+
+	if err := c.SaveUploadedFile(file, filepath); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal upload gambar"})
+		return
+	}
+
+	product.Image = "/" + filepath
+
+	// =======================
+	// simpan ke database
+	// =======================
+	if err := config.DB.Create(&product).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal menyimpan produk"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"message": "Produk berhasil dibuat",
 		"data":    product,
 	})
 }
 
-// get all product
+// =======================
+// GET ALL PRODUCTS
+// =======================
 func GetProducts(c *gin.Context) {
 	var products []models.Product
 
@@ -35,50 +96,61 @@ func GetProducts(c *gin.Context) {
 	c.JSON(http.StatusOK, products)
 }
 
-// get product by id
+// =======================
+// GET PRODUCT BY ID
+// =======================
 func GetProductsByID(c *gin.Context) {
 	var product models.Product
 	id := c.Param("id")
 
-	fmt.Println(id)
 	if err := config.DB.First(&product, id).Error; err != nil {
-		c.JSON(404, gin.H{"error": "Produk Tidak Ditemukan"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "produk tidak ditemukan"})
 		return
 	}
 
 	c.JSON(http.StatusOK, product)
 }
 
-// update product
+// =======================
+// UPDATE PRODUCT
+// =======================
 func UpdateProduct(c *gin.Context) {
 	var product models.Product
 	id := c.Param("id")
 
 	if err := config.DB.First(&product, id).Error; err != nil {
-		c.JSON(404, gin.H{"error": "Produk Tidak Ditemukan"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "produk tidak ditemukan"})
 		return
 	}
-	c.ShouldBindJSON(&product)
+
+	if err := c.ShouldBindJSON(&product); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	config.DB.Save(&product)
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Product berhasil di update",
+		"message": "Produk berhasil diupdate",
+		"data":    product,
 	})
 }
 
-// delete product
+// =======================
+// DELETE PRODUCT
+// =======================
 func DeleteProduct(c *gin.Context) {
 	var product models.Product
 	id := c.Param("id")
 
 	if err := config.DB.First(&product, id).Error; err != nil {
-		c.JSON(404, gin.H{"error": "Produk Tidak Ditemukan"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "produk tidak ditemukan"})
 		return
 	}
 
 	config.DB.Delete(&product)
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Produk Berhasil Dihapus",
+		"message": "Produk berhasil dihapus",
 	})
 }

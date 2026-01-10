@@ -12,6 +12,8 @@ func main() {
 	//tambahkan migrasi table
 	r := gin.Default()
 
+	r.Static("/uploads", "./uploads")
+
 	//connect database
 	config.ConnectDatabase()
 
