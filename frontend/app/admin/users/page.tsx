@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Swal from "sweetalert2";
 import { fetchUsers, updateUser } from "../../../lib/api";
 import UserForm from "../../../components/UserForm";
 
@@ -12,7 +13,22 @@ export default function UsersPage() {
 
   async function load() {
     const d = await fetchUsers();
-    setUsers(d || []);
+    const normalized = (Array.isArray(d) ? d : []).map((u, idx) => {
+      const rec = u as unknown as Record<string, unknown>;
+      const rawId = rec.id ?? rec.ID;
+      const parsedId =
+        typeof rawId === "number" ? rawId : Number.parseFloat(String(rawId));
+      const id = Number.isFinite(parsedId) ? parsedId : undefined;
+      const name = String(rec.name ?? rec.Name ?? "").trim();
+      const email = String(rec.email ?? rec.Email ?? "").trim();
+      return {
+        id,
+        name,
+        email,
+        key: id ?? `user-${idx}`,
+      } as User & { key: string | number };
+    });
+    setUsers(normalized);
   }
 
   useEffect(() => {
@@ -23,9 +39,34 @@ export default function UsersPage() {
     id: string | number,
     payload: { name?: string; email?: string }
   ) {
-    await updateUser(id, payload);
-    await load();
-    setEditing(null);
+    try {
+      const nid = typeof id === "number" ? id : Number(id);
+      if (!Number.isFinite(nid) || nid <= 0) {
+        await Swal.fire({
+          icon: "error",
+          title: "Gagal memperbarui",
+          text: "Id user tidak valid.",
+        });
+        return;
+      }
+      await updateUser(nid, payload);
+      await load();
+      setEditing(null);
+      await Swal.fire({
+        icon: "success",
+        title: "Berhasil",
+        text: "User berhasil diperbarui.",
+        timer: 1600,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      await Swal.fire({
+        icon: "error",
+        title: "Gagal memperbarui user",
+        text: message,
+      });
+    }
   }
 
   return (
@@ -41,15 +82,16 @@ export default function UsersPage() {
               >
                 <div>
                   <div className="font-medium">
-                    {u.name ?? (u.email ? u.email.split("@")[0] : "Unknown")}
+                    {u.name?.trim() || (u.email ? u.email.split("@")[0] : "Unknown")}
                   </div>
-                  <div className="text-sm text-slate-500">{u.email}</div>
+                  <div className="text-sm text-slate-500">{u.email || "-"}</div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="text-sm text-slate-600">ID: {u.id}</div>
+                  <div className="text-sm text-slate-600">ID: {Number.isFinite(u.id) ? u.id : "-"}</div>
                   <button
-                    className="text-sm text-slate-600"
+                    className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:text-slate-900 disabled:cursor-not-allowed disabled:border-slate-100 disabled:bg-slate-50 disabled:text-slate-400 cursor-pointer"
                     onClick={() => setEditing(u)}
+                    disabled={!Number.isFinite(u.id)}
                   >
                     Edit
                   </button>

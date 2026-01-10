@@ -9,6 +9,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [open, setOpen] = useState(false);
   const [authorized, setAuthorized] = useState(false);
   const [checking, setChecking] = useState(true);
+  const [userEmail, setUserEmail] = useState("");
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -18,6 +19,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       router.replace("/login");
       return;
     }
+    const email = localStorage.getItem("user_email") || "";
+    setUserEmail(email);
     setAuthorized(true);
     setChecking(false);
   }, [router]);
@@ -35,7 +38,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="flex-1">
             <div className="mb-6 flex items-center justify-between">
               <h1 className="text-2xl font-semibold text-slate-900">Admin Dashboard</h1>
-              <div className="hidden sm:block text-sm text-slate-600">Signed in as demo@local</div>
+              <div className="hidden sm:block text-sm text-slate-600">
+                {userEmail ? `Signed in as ${userEmail}` : "Signed in"}
+              </div>
             </div>
             <div>{children}</div>
           </div>

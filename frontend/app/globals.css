@@ -23,3 +23,13 @@ body {
   align-items: center;
   justify-content: center;
 }
+
+button {
+  cursor: pointer;
+  transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease,
+    box-shadow 150ms ease, transform 150ms ease;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}

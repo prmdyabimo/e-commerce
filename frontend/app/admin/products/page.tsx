@@ -202,26 +202,6 @@ export default function ProductsPage() {
     }
   }
 
-  async function onLogout() {
-    const confirmResult = await Swal.fire({
-      title: "Keluar dari admin?",
-      text: "Anda akan keluar dari sesi saat ini.",
-      icon: "question",
-      showCancelButton: true,
-      confirmButtonText: "Logout",
-      cancelButtonText: "Batal",
-    });
-    if (!confirmResult.isConfirmed) return;
-    localStorage.removeItem("token");
-    await Swal.fire({
-      icon: "success",
-      title: "Berhasil logout",
-      timer: 1200,
-      showConfirmButton: false,
-    });
-    router.push("/login");
-  }
-
   return (
     <div className="space-y-6 font-[var(--font-geist-sans)]">
       <div className="relative overflow-hidden rounded-3xl border border-slate-200/70 bg-white/80 p-6 shadow-sm">
@@ -272,12 +252,6 @@ export default function ProductsPage() {
               }
             >
               + Produk Baru
-            </button>
-            <button
-              className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:text-slate-900"
-              onClick={onLogout}
-            >
-              Logout
             </button>
           </div>
         </div>

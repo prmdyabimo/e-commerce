@@ -2,9 +2,19 @@ import { NextResponse } from "next/server";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+function isValidId(id?: string) {
+  return !!id && !Number.isNaN(Number(id));
+}
+
+type RouteParams = { id: string } | Promise<{ id: string }>;
+
+export async function PUT(req: Request, { params }: { params: RouteParams }) {
   try {
-    const id = params.id;
+    const resolvedParams = await params;
+    const id = resolvedParams.id;
+    if (!isValidId(id)) {
+      return NextResponse.json({ error: "Invalid user id" }, { status: 400 });
+    }
     const auth = req.headers.get("authorization");
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (auth) headers["Authorization"] = auth;

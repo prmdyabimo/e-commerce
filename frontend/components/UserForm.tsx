@@ -16,12 +16,19 @@ export default function UserForm({ initial, onUpdate, onCancel }: Props) {
   const [email, setEmail] = useState(initial?.email || "");
   const [loading, setLoading] = useState(false);
 
+  React.useEffect(() => {
+    setName(initial?.name || "");
+    setEmail(initial?.email || "");
+  }, [initial]);
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!initial?.id) return;
+    const rawId = initial?.id;
+    const id = typeof rawId === "number" ? rawId : Number(rawId);
+    if (!Number.isFinite(id) || id <= 0) return;
     setLoading(true);
     try {
-      await onUpdate(initial.id, { name, email });
+      await onUpdate(id, { name: name.trim(), email: email.trim() });
     } finally {
       setLoading(false);
     }

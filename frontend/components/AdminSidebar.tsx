@@ -2,8 +2,33 @@
 
 import React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import Swal from "sweetalert2";
 
 export default function AdminSidebar({ open, onToggle }: { open?: boolean; onToggle?: () => void }) {
+  const router = useRouter();
+
+  async function onLogout() {
+    const confirmResult = await Swal.fire({
+      title: "Keluar dari admin?",
+      text: "Anda akan keluar dari sesi saat ini.",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Logout",
+      cancelButtonText: "Batal",
+    });
+    if (!confirmResult.isConfirmed) return;
+    localStorage.removeItem("token");
+    localStorage.removeItem("user_email");
+    await Swal.fire({
+      icon: "success",
+      title: "Berhasil logout",
+      timer: 1200,
+      showConfirmButton: false,
+    });
+    router.push("/login");
+  }
+
   return (
     <>
       {/* mobile toggle button */}
@@ -43,6 +68,14 @@ export default function AdminSidebar({ open, onToggle }: { open?: boolean; onTog
               Users
             </Link>
           </nav>
+          <div className="mt-4 border-t border-slate-100 pt-3">
+            <button
+              className="block w-full rounded px-3 py-2 text-left text-sm font-semibold text-rose-600 hover:bg-rose-50"
+              onClick={onLogout}
+            >
+              Logout
+            </button>
+          </div>
         </div>
       </aside>
     </>

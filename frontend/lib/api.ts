@@ -141,7 +141,11 @@ export async function updateUser(
   id: string | number,
   payload: { name?: string; email?: string }
 ): Promise<User> {
-  const res = await fetch(`${API_ROOT}/users/${id}`, {
+  const numericId = typeof id === "number" ? id : Number(id);
+  if (!Number.isFinite(numericId) || numericId <= 0) {
+    throw new Error("Invalid user id");
+  }
+  const res = await fetch(`${API_ROOT}/users/${numericId}`, {
     method: "PUT",
     headers: getAuthHeaders(),
     body: JSON.stringify(payload),
