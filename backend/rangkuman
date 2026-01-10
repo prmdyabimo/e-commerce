@@ -1,0 +1,40 @@
+Kamu sedang membangun Mini E-Commerce Backend dengan:
+Golang → bahasa backend
+Gin → web framework (routing HTTP)
+GORM → ORM (komunikasi database)
+MySQL → database
+JWT → login & autentikasi
+REST API → arsitektur backend
+
+Tujuan backend ini:
+
+User bisa register & login
+Produk bisa ditambah, dilihat, diubah, dihapus
+Semua lewat HTTP API (Postman / frontend)
+mini-ecommerce/
+├── main.go
+├── go.mod
+├── config/
+│   └── database.go
+├── models/
+│   ├── user.go
+│   └── product.go
+├── controllers/
+│   ├── auth_controller.go
+│   └── product_controller.go
+├── routes/
+│   └── routes.go
+├── utils/
+│   └── jwt.go
+Kenapa dipisah seperti ini?
+Karena backend profesional SELALU modular.
+| Folder        | Fungsi                          |
+| ------------- | ------------------------------- |
+| `main.go`     | Entry point (server dijalankan) |
+| `config`      | Konfigurasi (database)          |
+| `models`      | Bentuk tabel database           |
+| `controllers` | Logic API                       |
+| `routes`      | URL & HTTP method               |
+| `utils`       | Helper (JWT, dll)               |
+cara login bukan lewat klik form html
+atau halaman web, tapi lewat http request, menggunakan Postman
