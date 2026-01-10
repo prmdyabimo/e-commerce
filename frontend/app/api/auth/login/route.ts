@@ -1,25 +1,24 @@
 import { NextResponse } from "next/server";
 
+const BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { email, password } = body || {};
+    const body = await req.text();
+    const proxiedUrl = `${BASE}/login`;
+    const res = await fetch(proxiedUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body,
+    });
+    const text = await res.text();
+    const contentType = res.headers.get("content-type") || "application/json";
 
-    if (!email || !password) {
-      return NextResponse.json({ message: "Email and password are required" }, { status: 400 });
-    }
-
-    // Mock validation: accept any password with length >= 4 and an @ in email
-    if (!email.includes("@") || String(password).length < 4) {
-      return NextResponse.json({ message: "Invalid credentials" }, { status: 401 });
-    }
-
-    // Return a mock user and token
-    const user = { id: "u_1", email };
-    const token = "mock-token-12345";
-
-    return NextResponse.json({ user, token });
-  } catch (err: any) {
+    return new NextResponse(text, {
+      status: res.status,
+      headers: { "Content-Type": contentType },
+    });
+  } catch (err: unknown) {
     return NextResponse.json({ message: String(err) }, { status: 500 });
   }
 }

@@ -1,12 +1,20 @@
 import { NextResponse } from "next/server";
 
-type User = { id: string; name?: string; email: string };
+const BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
-const users: User[] = [
-  { id: "u_1", name: "Demo User", email: "demo@local" },
-  { id: "u_2", name: "Another", email: "other@local" },
-];
+export async function GET(req: Request) {
+  const auth = req.headers.get("authorization");
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (auth) headers["Authorization"] = auth;
+  const proxiedUrl = `${BASE}/users`;
+  const res = await fetch(proxiedUrl, { headers, cache: "no-store" });
+  const body = await res.text();
+  const contentType = res.headers.get("content-type") || "application/json";
 
-export async function GET() {
-  return NextResponse.json(users);
+  return new NextResponse(body, {
+    status: res.status,
+    headers: { "Content-Type": contentType },
+  });
 }

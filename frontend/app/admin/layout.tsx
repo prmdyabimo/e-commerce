@@ -1,10 +1,30 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import AdminSidebar from "../../components/AdminSidebar";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [authorized, setAuthorized] = useState(false);
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setAuthorized(false);
+      setChecking(false);
+      router.replace("/login");
+      return;
+    }
+    setAuthorized(true);
+    setChecking(false);
+  }, [router]);
+
+  if (checking || !authorized) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-[var(--background)]">

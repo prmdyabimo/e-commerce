@@ -27,4 +27,11 @@ func SetupRoutes(r *gin.Engine) {
 		product.PUT("/:id", controllers.UpdateProduct)
 		product.DELETE("/:id", controllers.DeleteProduct)
 	}
+
+	user := r.Group("/users")
+	user.Use(middlewares.AuthMiddleware())
+	{
+		user.GET("", controllers.GetUsers)
+		user.PUT("/:id", controllers.UpdateUser)
+	}
 }

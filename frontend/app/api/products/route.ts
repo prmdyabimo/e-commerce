@@ -1,30 +1,43 @@
 import { NextResponse } from "next/server";
 
-type Product = { id: string; name: string; price: number; description?: string };
+const BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
-// In-memory product store for demo purposes
-export const products: Product[] = [
-  { id: "p_1", name: "Sample product", price: 19.99, description: "An example item" },
-];
+export async function GET(req: Request) {
+  // Server-side proxy to backend to avoid CORS in browser
+  const auth = req.headers.get("authorization");
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (auth) headers["Authorization"] = auth;
 
-function genId() {
-  return "p_" + Math.random().toString(36).slice(2, 9);
-}
+  const proxiedUrl = `${BASE}/products`;
+  const res = await fetch(proxiedUrl, { headers, cache: "no-store" });
+  const body = await res.text();
+  const contentType = res.headers.get("content-type") || "application/json";
 
-export async function GET() {
-  return NextResponse.json(products);
+  return new NextResponse(body, {
+    status: res.status,
+    headers: { "Content-Type": contentType },
+  });
 }
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { name, price, description } = body || {};
-    if (!name || typeof price !== "number") {
-      return NextResponse.json({ message: "Invalid product" }, { status: 400 });
-    }
-    const p = { id: genId(), name, price, description };
-    products.push(p);
-    return NextResponse.json(p, { status: 201 });
+    const auth = req.headers.get("authorization");
+    const headers: Record<string, string> = {};
+    if (auth) headers["Authorization"] = auth;
+    const requestContentType = req.headers.get("content-type");
+    if (requestContentType) headers["Content-Type"] = requestContentType;
+    const body = await req.arrayBuffer();
+    const proxiedUrl = `${BASE}/products`;
+    const res = await fetch(proxiedUrl, { method: "POST", headers, body });
+    const text = await res.text();
+    const contentType = res.headers.get("content-type") || "application/json";
+
+    return new NextResponse(text, {
+      status: res.status,
+      headers: { "Content-Type": contentType },
+    });
   } catch (err: unknown) {
     return NextResponse.json({ message: String(err) }, { status: 500 });
   }

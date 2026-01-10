@@ -21,23 +21,28 @@ export default function AuthForm({ mode }: { mode: Mode }) {
     try {
       if (mode === "login") {
         const res = await signIn({ email, password });
-        if (res?.token) {
-          localStorage.setItem("token", res.token);
-          router.push("/");
+        // signIn now returns { status, body }
+        if (res?.status === 200 && res.body?.token) {
+          localStorage.setItem("token", res.body.token);
+          // redirect to admin dashboard after successful login
+          router.push("/admin");
         } else {
-          setError(res?.message || "Login failed");
+          setError(res?.body?.error || res?.body?.message || "Login failed");
         }
       } else {
         const res = await signUp({ name, email, password });
-        if (res?.token) {
-          localStorage.setItem("token", res.token);
-          router.push("/");
+        // register on backend returns message, not token
+        if (res?.status === 200 || res?.status === 201) {
+          // registration successful -> redirect to login
+          router.push("/login");
         } else {
-          setError(res?.message || "Registration failed");
+          setError(res?.body?.error || res?.body?.message || "Registration failed");
         }
       }
-    } catch (err: any) {
-      setError(err?.message || String(err));
+    } catch (err: unknown) {
+      // err may be an Error or string; try to read message if present
+      const maybeMsg = typeof err === "object" && err !== null && "message" in err ? (err as { message?: unknown }).message : undefined;
+      setError((maybeMsg as string) || String(err));
     } finally {
       setLoading(false);
     }
