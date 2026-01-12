@@ -1,46 +1,59 @@
 package controllers
 
 import (
-    "mini-ecommerce/config"
-    "mini-ecommerce/models"
-    "net/http"
+	"net/http"
 
-    "github.com/gin-gonic/gin"
+	"mini-ecommerce/models"
+
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
-// GetUsers returns all users (protected)
-func GetUsers(c *gin.Context) {
-    var users []models.User
-    config.DB.Find(&users)
-    c.JSON(http.StatusOK, users)
+type UserController struct {
+	DB *gorm.DB
 }
 
-// UpdateUser updates a user's fields (name, email, password optional)
-func UpdateUser(c *gin.Context) {
-    var user models.User
-    id := c.Param("id")
+// constructor
+func NewUserController(db *gorm.DB) *UserController {
+	return &UserController{DB: db}
+}
 
-    if err := config.DB.First(&user, id).Error; err != nil {
-        c.JSON(404, gin.H{"error": "User not found"})
-        return
-    }
+// =======================
+// GET ALL USERS
+// =======================
+func (uc *UserController) GetAll(c *gin.Context) {
+	var users []models.User
+	uc.DB.Find(&users)
+	c.JSON(http.StatusOK, users)
+}
 
-    var input models.User
-    if err := c.ShouldBindJSON(&input); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-        return
-    }
+// =======================
+// GET USER BY ID
+// =======================
+func (uc *UserController) GetByID(c *gin.Context) {
+	var user models.User
+	id := c.Param("id")
 
-    // Only update allowed fields
-    if input.Name != "" {
-        user.Name = input.Name
-    }
-    if input.Email != "" {
-        user.Email = input.Email
-    }
-    // Note: password hashing/update not implemented here for simplicity
+	if err := uc.DB.First(&user, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User tidak ditemukan"})
+		return
+	}
 
-    config.DB.Save(&user)
+	c.JSON(http.StatusOK, user)
+}
 
-    c.JSON(http.StatusOK, gin.H{"message": "User updated", "data": user})
+// =======================
+// DELETE USER
+// =======================
+func (uc *UserController) Delete(c *gin.Context) {
+	id := c.Param("id")
+
+	if err := uc.DB.Delete(&models.User{}, id).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal hapus user"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "User berhasil dihapus",
+	})
 }

@@ -1,71 +1,102 @@
 package controllers
 
 import (
-	"mini-ecommerce/config"
-	"mini-ecommerce/models"
-	"mini-ecommerce/utils"
 	"net/http"
 
+	"mini-ecommerce/models"
+	"mini-ecommerce/utils"
+
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
-func Login(c *gin.Context) {
+type AuthController struct {
+	DB *gorm.DB
+}
+
+// constructor
+func NewAuthController(db *gorm.DB) *AuthController {
+	return &AuthController{DB: db}
+}
+
+// =======================
+// LOGIN
+// =======================
+func (ac *AuthController) Login(c *gin.Context) {
 	var input models.User
 	var user models.User
 
-	//ambil email & password dari request
+	// ambil email & password
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(400, gin.H{"eror": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	//cari user berdasarkan email
-	result := config.DB.Where("email = ?", input.Email).First(&user)
-	if result.Error != nil {
-		c.JSON(401, gin.H{"error": "Email tidak di temukan"})
-		return
-	}
-	//cek password menggunakan hash
-	if !utils.CheckPassword(user.Password, input.Password) {
-		c.JSON(401, gin.H{"error": "Password Salah"})
-		return
-	}
-	//buat token jwt
-	token, _ := utils.GenerateToken(user.ID, user.Role)
 
-	c.JSON(200, gin.H{
-		"message": "Login Berhasil",
+	// cari user berdasarkan email
+	if err := ac.DB.Where("email = ?", input.Email).First(&user).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Email tidak ditemukan"})
+		return
+	}
+
+	// cek password
+	if !utils.CheckPassword(user.Password, input.Password) {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Password salah"})
+		return
+	}
+
+	// generate JWT
+	token, err := utils.GenerateToken(user.ID, user.Role)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal generate token"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Login berhasil",
 		"token":   token,
 	})
 }
 
-func Register(c *gin.Context) {
-
+// =======================
+// REGISTER
+// =======================
+func (ac *AuthController) Register(c *gin.Context) {
 	var user models.User
 
-	// ambil JSON dari request
 	if err := c.ShouldBindJSON(&user); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// cek email sudah terdaftar atau belum
+	var existingUser models.User
+	if err := ac.DB.Where("email = ?", user.Email).First(&existingUser).Error; err == nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
+			"error": "Email sudah terdaftar",
 		})
 		return
 	}
-	//set role
+
+	// set role default
 	user.Role = "user"
 
-	//hash password
-	hashsedPassword, err := utils.HashPassword(user.Password)
+	// hash password
+	hashedPassword, err := utils.HashPassword(user.Password)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Gagal hash password",
 		})
 		return
 	}
-
-	//ganti password asli dengan hash
-	user.Password = hashsedPassword
+	user.Password = hashedPassword
 
 	// simpan ke database
-	config.DB.Create(&user)
+	if err := ac.DB.Create(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Gagal register",
+		})
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Register berhasil",

@@ -5,33 +5,48 @@ import (
 	"mini-ecommerce/middlewares"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
-func SetupRoutes(r *gin.Engine) {
+func SetupRoutes(r *gin.Engine, db *gorm.DB) {
+
+	// =====================
+	// INIT CONTROLLERS
+	// =====================
+	authController := controllers.NewAuthController(db)
+	productController := controllers.NewProductController(db)
+	userController := controllers.NewUserController(db)
+	categoryController := controllers.NewCategoryController(db)
 
 	// =====================
 	// PUBLIC ROUTES
 	// =====================
-	r.POST("/register", controllers.Register)
-	r.POST("/login", controllers.Login)
+	r.POST("/register", authController.Register)
+	r.POST("/login", authController.Login)
 
 	// =====================
 	// PROTECTED ROUTES
 	// =====================
-	product := r.Group("/products")
-	product.Use(middlewares.AuthMiddleware())
+	protected := r.Group("/")
+	protected.Use(middlewares.AuthMiddleware())
 	{
-		product.POST("", controllers.CreateProduct)
-		product.GET("", controllers.GetProducts)
-		product.GET("/:id", controllers.GetProductsByID)
-		product.PUT("/:id", controllers.UpdateProduct)
-		product.DELETE("/:id", controllers.DeleteProduct)
-	}
+		// ===== PRODUCTS =====
+		protected.POST("/products", productController.Create)
+		protected.GET("/products", productController.GetAll)
+		protected.GET("/products/:id", productController.GetByID)
+		protected.PUT("/products/:id", productController.Update)
+		protected.DELETE("/products/:id", productController.Delete)
 
-	user := r.Group("/users")
-	user.Use(middlewares.AuthMiddleware())
-	{
-		user.GET("", controllers.GetUsers)
-		user.PUT("/:id", controllers.UpdateUser)
+		// ===== USERS =====
+		protected.GET("/users", userController.GetAll)
+		protected.GET("/users/:id", userController.GetByID)
+		protected.DELETE("/users/:id", userController.Delete)
+
+		// ===== CATEGORIES =====
+		protected.POST("/categories", categoryController.Create)
+		protected.GET("/categories", categoryController.FindAll)
+		protected.GET("/categories/:id", categoryController.FindByID)
+		protected.PUT("/categories/:id", categoryController.Update)
+		protected.DELETE("/categories/:id", categoryController.Delete)
 	}
 }

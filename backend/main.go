@@ -10,26 +10,33 @@ import (
 )
 
 func main() {
-	//tambahkan migrasi table
+
+	// inisialisasi gin
 	r := gin.Default()
 
+	// static file (upload image)
 	r.Static("/uploads", "./uploads")
 
-	//connect database
-	config.ConnectDatabase()
+	// =====================
+	// INIT DATABASE
+	// =====================
+	db := config.InitDB()
 
-	//buat automigrate
-	config.DB.AutoMigrate(
+	// automigrate table
+	db.AutoMigrate(
 		&models.User{},
 		&models.Product{},
+		&models.Category{},
 	)
 
-	// enable CORS for local frontend during development
-	// consider restricting Origins in production
+	// enable CORS
 	r.Use(cors.Default())
 
-	//routes
-	routes.SetupRoutes(r)
+	// =====================
+	// ROUTES
+	// =====================
+	routes.SetupRoutes(r, db)
 
+	// run server
 	r.Run(":8080")
 }
