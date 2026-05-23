@@ -1,2 +1,5 @@
 # uploads folder
 uploads/
+
+# Environment variables file
+.env
