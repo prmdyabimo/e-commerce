@@ -47,7 +47,7 @@ const numberFormatter = new Intl.NumberFormat("id-ID");
 const DEFAULT_IMAGE =
   "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Crect width='140' height='140' rx='28' fill='%23E2E8F0'/%3E%3Cpath d='M34 94l22-28 24 30 16-18 24 30H34z' fill='%2394A3B8'/%3E%3Ccircle cx='52' cy='50' r='10' fill='%2394A3B8'/%3E%3C/svg%3E";
 
-const ASSET_BASE = process.env.NEXT_PUBLIC_API_URL || "";
+const ASSET_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 function formatPrice(value: number) {
   if (!Number.isFinite(value)) return "";
@@ -103,7 +103,7 @@ export default function ProductForm({
 
   const isEditing = currentId !== undefined && currentId !== null;
 
-  // sync state ketika edit product
+  // sync state when editing product
   React.useEffect(() => {
     setName(initial?.name || "");
 
@@ -126,7 +126,7 @@ export default function ProductForm({
     setErrors({});
   }, [initial]);
 
-  // preview image
+  // preview image when file changes
   React.useEffect(() => {
     if (!imageFile) {
       setImagePreview(resolveImageUrl(existingImage));
@@ -145,23 +145,23 @@ export default function ProductForm({
     const nextErrors: Record<string, string> = {};
 
     if (categoryId <= 0) {
-      nextErrors.category = "Category wajib dipilih.";
+      nextErrors.category = "Category is required.";
     }
 
     if (!name.trim()) {
-      nextErrors.name = "Nama produk wajib diisi.";
+      nextErrors.name = "Product name is required.";
     }
 
     if (!Number.isFinite(priceValue) || priceValue <= 0) {
-      nextErrors.price = "Harga harus lebih besar dari 0.";
+      nextErrors.price = "Price must be greater than 0.";
     }
 
     if (!Number.isFinite(stock) || stock < 0) {
-      nextErrors.stock = "Stok tidak boleh negatif.";
+      nextErrors.stock = "Stock cannot be negative.";
     }
 
     if (!imageFile && !existingImage.trim()) {
-      nextErrors.image = "Gambar produk wajib diunggah.";
+      nextErrors.image = "Product image is required.";
     }
 
     setErrors(nextErrors);
@@ -198,7 +198,7 @@ export default function ProductForm({
           category_id: categoryId,
         });
 
-        // reset form
+        // reset form after successful submission
         setName("");
         setPriceValue(0);
         setPriceInput("");
@@ -219,15 +219,15 @@ export default function ProductForm({
       <div className="grid gap-4 sm:grid-cols-2">
         {/* NAME */}
         <div className="sm:col-span-2">
-          <label className="block text-sm font-semibold text-slate-700">
-            Nama Produk
+          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">
+            Product Name
           </label>
 
           <input
-            className="mt-2 w-full rounded-xl border border-slate-200 bg-white/70 px-3 py-2 text-sm"
+            className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Contoh: Sneakers Aurora"
+            placeholder="Example: Aurora Sneakers"
           />
 
           {errors.name && (
@@ -237,17 +237,17 @@ export default function ProductForm({
 
         {/* PRICE */}
         <div>
-          <label className="block text-sm font-semibold text-slate-700">
-            Harga
+          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">
+            Price
           </label>
 
-          <div className="mt-2 flex items-center rounded-xl border border-slate-200 bg-white/70 px-3 py-2">
-            <span className="text-xs font-semibold text-slate-500">Rp</span>
+          <div className="mt-2 flex items-center rounded-xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-800">
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">$</span>
 
             <input
-              className="ml-2 w-full bg-transparent outline-none"
+              className="ml-2 w-full bg-transparent text-slate-900 outline-none dark:text-slate-100 dark:placeholder-slate-500"
               inputMode="numeric"
-              placeholder="1.000"
+              placeholder="1000"
               value={priceInput}
               onChange={(e) => {
                 const raw = e.target.value;
@@ -270,8 +270,8 @@ export default function ProductForm({
 
         {/* STOCK */}
         <div>
-          <label className="block text-sm font-semibold text-slate-700">
-            Stok
+          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">
+            Stock
           </label>
 
           <input
@@ -283,7 +283,7 @@ export default function ProductForm({
 
               setStock(Number.isFinite(next) ? next : 0);
             }}
-            className="mt-2 w-full rounded-xl border border-slate-200 bg-white/70 px-3 py-2 text-sm"
+            className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
           />
 
           {errors.stock && (
@@ -293,14 +293,14 @@ export default function ProductForm({
 
         {/* CATEGORY */}
         <div className="sm:col-span-2">
-          <label className="block text-sm font-semibold text-slate-700">
+          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">
             Category
           </label>
 
           <select
             value={categoryId}
             onChange={(e) => setCategoryId(Number(e.target.value))}
-            className="mt-2 w-full rounded-xl border border-slate-200 bg-white/70 px-3 py-2 text-sm"
+            className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
             required
           >
             <option value={0}>Pilih Category</option>
@@ -319,26 +319,32 @@ export default function ProductForm({
 
         {/* IMAGE */}
         <div className="sm:col-span-2">
-          <label className="block text-sm font-semibold text-slate-700">
-            Image Produk
+          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">
+            Product Image
           </label>
 
-          <div className="mt-2 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white/70 p-3 sm:flex-row sm:items-center">
-            <div className="h-20 w-20 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
+          <label className="mt-2 block cursor-pointer rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 p-4 text-center dark:border-slate-700 dark:bg-slate-800/60">
+            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm dark:bg-slate-900">
               <img
                 src={imagePreview}
-                alt="Preview produk"
-                className="h-full w-full object-cover"
+                alt="Product preview"
+                className="h-10 w-10 rounded-xl object-cover"
               />
             </div>
-
-            <div className="flex-1">
+            <div className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+              Click to upload image
+            </div>
+            <div className="text-xs text-slate-500 dark:text-slate-400">
+              PNG, JPG, GIF maximum 5MB
+            </div>
+            <div className="mt-3 flex w-full justify-center">
               <input
                 type="file"
                 accept="image/*"
                 required={!isEditing}
                 key={`image-input-${currentId ?? "new"}`}
-                className="block w-full text-sm"
+                id={`file-input-${currentId ?? "new"}`}
+                className="hidden"
                 onChange={(e) => {
                   const file = e.target.files?.[0] ?? null;
 
@@ -349,14 +355,19 @@ export default function ProductForm({
                   setExistingImage("");
                 }}
               />
-
-              <p className="mt-2 text-xs text-slate-500">
-                {isEditing
-                  ? "Upload ulang jika ingin mengganti gambar."
-                  : "Wajib upload 1 gambar produk."}
-              </p>
+              <label
+                htmlFor={`file-input-${currentId ?? "new"}`}
+                className="cursor-pointer text-xs text-slate-600 hover:text-slate-700 dark:text-slate-300 dark:hover:text-slate-100"
+              >
+                Choose File
+              </label>
             </div>
-          </div>
+            <p className="mt-2 text-center text-xs text-slate-500 dark:text-slate-400">
+              {isEditing
+                ? "Re-upload if you want to change the image."
+                : "Product image is required."}
+            </p>
+          </label>
 
           {errors.image && (
             <p className="mt-2 text-xs text-rose-600">{errors.image}</p>
@@ -365,7 +376,7 @@ export default function ProductForm({
 
         {/* DESCRIPTION */}
         <div className="sm:col-span-2">
-          <label className="block text-sm font-semibold text-slate-700">
+          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">
             Description
           </label>
 
@@ -373,8 +384,8 @@ export default function ProductForm({
             rows={3}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="mt-2 w-full rounded-xl border border-slate-200 bg-white/70 px-3 py-2 text-sm"
-            placeholder="Deskripsi singkat produk."
+            className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500"
+            placeholder="Brief product description."
           />
         </div>
       </div>
@@ -384,18 +395,18 @@ export default function ProductForm({
         <button
           type="submit"
           disabled={loading}
-          className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
+          className="w-full rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
         >
-          {loading ? "Saving..." : isEditing ? "Update" : "Create"}
+          {loading ? "Menyimpan..." : isEditing ? "Simpan Perubahan" : "Simpan Produk"}
         </button>
 
         {isEditing && (
           <button
             type="button"
             onClick={() => onCancel && onCancel()}
-            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
           >
-            Cancel
+            Batal
           </button>
         )}
       </div>

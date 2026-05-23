@@ -38,8 +38,8 @@ export default function AuthForm({ mode }: { mode: Mode }) {
         if (res?.status === 200 || res?.status === 201) {
           await Swal.fire({
             icon: "success",
-            title: "Berhasil",
-            text: "Registrasi berhasil. Silakan login.",
+            title: "Success",
+            text: "Registration successful. Please login.",
             timer: 1600,
             showConfirmButton: false,
           });
@@ -51,7 +51,7 @@ export default function AuthForm({ mode }: { mode: Mode }) {
           setError(message);
           await Swal.fire({
             icon: "error",
-            title: "Gagal registrasi",
+            title: "Registration failed",
             text: message,
           });
         }

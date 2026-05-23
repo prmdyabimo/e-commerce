@@ -226,6 +226,70 @@ export async function fetchCategories(): Promise<Category[]> {
   return body as Category[];
 }
 
+export async function createCategory(payload: { name: string }): Promise<Category> {
+  const res = await fetch(`${API_ROOT}/categories`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload),
+  });
+
+  const body = await parseResponse(res);
+
+  if (!res.ok) {
+    throw new Error(body?.error || body?.message || "Create category failed");
+  }
+
+  return body as Category;
+}
+
+export async function updateCategory(
+  id: string | number,
+  payload: { name: string },
+): Promise<Category> {
+  const numericId = typeof id === "number" ? id : Number(id);
+
+  if (!Number.isFinite(numericId) || numericId <= 0) {
+    throw new Error("Invalid category id");
+  }
+
+  const res = await fetch(`${API_ROOT}/categories/${numericId}`, {
+    method: "PUT",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload),
+  });
+
+  const body = await parseResponse(res);
+
+  if (!res.ok) {
+    throw new Error(body?.error || body?.message || "Update category failed");
+  }
+
+  return body as Category;
+}
+
+export async function deleteCategory(
+  id: string | number,
+): Promise<{ message: string }> {
+  const numericId = typeof id === "number" ? id : Number(id);
+
+  if (!Number.isFinite(numericId) || numericId <= 0) {
+    throw new Error("Invalid category id");
+  }
+
+  const res = await fetch(`${API_ROOT}/categories/${numericId}`, {
+    method: "DELETE",
+    headers: getAuthHeaders(),
+  });
+
+  const body = await parseResponse(res);
+
+  if (!res.ok) {
+    throw new Error(body?.error || body?.message || "Delete category failed");
+  }
+
+  return body as { message: string };
+}
+
 // ===============================
 // USERS
 // ===============================
