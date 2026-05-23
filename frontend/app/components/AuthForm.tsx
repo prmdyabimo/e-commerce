@@ -69,9 +69,9 @@ export default function AuthForm({ mode }: { mode: Mode }) {
     <form onSubmit={onSubmit} className="space-y-4">
       {mode === "register" && (
         <div>
-          <label className="block text-sm font-medium text-slate-700">Name</label>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Name</label>
           <input
-            className="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900 shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Your full name"
@@ -81,9 +81,9 @@ export default function AuthForm({ mode }: { mode: Mode }) {
       )}
 
       <div>
-        <label className="block text-sm font-medium text-slate-700">Email</label>
+        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Email</label>
         <input
-          className="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          className="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900 shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -93,10 +93,10 @@ export default function AuthForm({ mode }: { mode: Mode }) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-slate-700">Password</label>
+        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Password</label>
         <div className="relative mt-1">
           <input
-            className="block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 pr-10 shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 pr-10 text-slate-900 shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500"
             type={showPassword ? "text" : "password"}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -105,7 +105,7 @@ export default function AuthForm({ mode }: { mode: Mode }) {
           />
           <button
             type="button"
-            className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 transition hover:text-slate-600"
+            className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 transition hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
             onClick={() => setShowPassword((v) => !v)}
             aria-label={showPassword ? "Hide password" : "Show password"}
           >
@@ -128,7 +128,7 @@ export default function AuthForm({ mode }: { mode: Mode }) {
         </div>
       </div>
 
-      {error && <div className="text-sm text-red-600">{error}</div>}
+      {error && <div className="text-sm text-red-600 dark:text-red-400">{error}</div>}
 
       <div>
         <button

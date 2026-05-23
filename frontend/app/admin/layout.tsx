@@ -52,7 +52,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const initials = displayName ? displayName.slice(0, 1).toUpperCase() : "A";
 
   return (
-    <div className={`min-h-screen ${theme === "dark" ? "dark bg-slate-950" : "bg-[#f5f7fb]"}`}>
+    <div className={`min-h-screen ${theme === "dark" ? "bg-slate-950" : "bg-[#f5f7fb]"}`}>
       <div className="px-3 py-3 sm:px-4 sm:py-4">
         <div className="relative">
           <AdminSidebar

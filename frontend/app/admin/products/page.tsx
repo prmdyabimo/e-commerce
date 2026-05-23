@@ -55,6 +55,11 @@ export default function ProductsPage() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [sortFilter, setSortFilter] = useState("newest");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [previewImage, setPreviewImage] = useState<{
+    src: string;
+    alt: string;
+    name: string;
+  } | null>(null);
   const emptyProduct: Product = {
     name: "",
     price: 0,
@@ -430,9 +435,20 @@ export default function ProductsPage() {
                         <tr key={item.key} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/60">
                           <td className="px-4 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="h-12 w-12 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800">
+                              <button
+                                type="button"
+                                className="h-12 w-12 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800"
+                                onClick={() =>
+                                  setPreviewImage({
+                                    src: imageUrl,
+                                    alt: item.name || "Product image",
+                                    name: item.name || "Product image",
+                                  })
+                                }
+                                title="View product image"
+                              >
                                 <img src={imageUrl} alt={item.name} className="h-full w-full object-cover" />
-                              </div>
+                              </button>
                               <div>
                                 <div className="font-semibold text-slate-900 dark:text-slate-100">
                                   {item.name || "Unnamed product"}
@@ -524,39 +540,77 @@ export default function ProductsPage() {
 
       {editing && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4"
+          className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 p-4"
           onClick={() => setEditing(null)}
         >
           <div
-            className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl dark:border dark:border-slate-800 dark:bg-slate-900"
+            className="mx-auto my-4 flex min-h-[calc(100vh-2rem)] w-full max-w-2xl items-center sm:my-6 sm:min-h-[calc(100vh-3rem)]"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="mb-4 flex items-start justify-between gap-4">
+            <div className="max-h-[calc(100vh-2rem)] w-full overflow-y-auto rounded-2xl bg-white p-5 shadow-xl dark:border dark:border-slate-800 dark:bg-slate-900 sm:max-h-[calc(100vh-3rem)] sm:p-6">
+              <div className="mb-4 flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                    {editing?.id ? "Edit Product" : "Add New Product"}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Complete the product information below.
+                  </p>
+                </div>
+                <button
+                  className="rounded-lg border border-slate-200 p-2 text-slate-500 hover:text-slate-700 dark:border-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                  onClick={() => setEditing(null)}
+                >
+                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M6 6l12 12M18 6l-12 12" />
+                  </svg>
+                </button>
+              </div>
+              <ProductForm
+                key={editing?.id !== undefined ? String(editing?.id) : "new"}
+                initial={editing ? editing : undefined}
+                onCancel={() => setEditing(null)}
+                onCreate={onCreate}
+                onUpdate={onUpdate}
+                categories={categories}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/70 p-4"
+          onClick={() => setPreviewImage(null)}
+        >
+          <div
+            className="w-full max-w-3xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-4 border-b border-slate-100 px-4 py-3 dark:border-slate-800">
               <div>
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                  {editing?.id ? "Edit Product" : "Add New Product"}
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  {previewImage.name}
                 </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Complete the product information below.
-                </p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Product image preview</p>
               </div>
               <button
                 className="rounded-lg border border-slate-200 p-2 text-slate-500 hover:text-slate-700 dark:border-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-                onClick={() => setEditing(null)}
+                onClick={() => setPreviewImage(null)}
               >
                 <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M6 6l12 12M18 6l-12 12" />
                 </svg>
               </button>
             </div>
-            <ProductForm
-              key={editing?.id !== undefined ? String(editing?.id) : "new"}
-              initial={editing ? editing : undefined}
-              onCancel={() => setEditing(null)}
-              onCreate={onCreate}
-              onUpdate={onUpdate}
-              categories={categories}
-            />
+            <div className="flex max-h-[75vh] items-center justify-center bg-slate-50 p-4 dark:bg-slate-950">
+              <img
+                src={previewImage.src}
+                alt={previewImage.alt}
+                className="max-h-[70vh] max-w-full rounded-xl object-contain"
+              />
+            </div>
           </div>
         </div>
       )}
