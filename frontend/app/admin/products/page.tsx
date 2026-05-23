@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Swal from "sweetalert2";
 import {
   fetchProducts,
+  fetchCategories,
   createProduct,
   updateProduct,
   deleteProduct,
@@ -18,6 +19,11 @@ type Product = {
   description?: string;
   stock?: number;
   image?: string;
+};
+
+type Category = {
+  id: number;
+  name: string;
 };
 
 const numberFormatter = new Intl.NumberFormat("id-ID");
@@ -34,7 +40,9 @@ function resolveImageUrl(image?: string) {
   if (!image) return DEFAULT_IMAGE;
   if (/^https?:\/\//i.test(image)) return image;
   if (!ASSET_BASE) return image;
-  return image.startsWith("/") ? `${ASSET_BASE}${image}` : `${ASSET_BASE}/${image}`;
+  return image.startsWith("/")
+    ? `${ASSET_BASE}${image}`
+    : `${ASSET_BASE}/${image}`;
 }
 
 export default function ProductsPage() {
@@ -43,12 +51,22 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Product | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
 
   async function load() {
-    setLoading(true);
-    const data = await fetchProducts();
-    setProducts(data || []);
-    setLoading(false);
+    try {
+      setLoading(true);
+
+      const productData = await fetchProducts();
+      const categoryData = await fetchCategories();
+
+      setProducts(productData || []);
+      setCategories(categoryData || []);
+    } catch (err) {
+      console.error("load data error", err);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -79,10 +97,13 @@ export default function ProductsPage() {
     };
   });
 
-  const totalStock = normalizedProducts.reduce((acc, item) => acc + item.stock, 0);
+  const totalStock = normalizedProducts.reduce(
+    (acc, item) => acc + item.stock,
+    0,
+  );
   const inventoryValue = normalizedProducts.reduce(
     (acc, item) => acc + item.price * item.stock,
-    0
+    0,
   );
 
   async function onCreate(payload: {
@@ -91,11 +112,15 @@ export default function ProductsPage() {
     description?: string;
     stock: number;
     imageFile: File;
+    category_id: number;
   }) {
     try {
       await createProduct(payload);
+
       await load();
+
       setEditing(null);
+
       await Swal.fire({
         icon: "success",
         title: "Berhasil",
@@ -105,7 +130,9 @@ export default function ProductsPage() {
       });
     } catch (err) {
       console.error("createProduct error", err);
+
       const message = err instanceof Error ? err.message : String(err);
+
       await Swal.fire({
         icon: "error",
         title: "Gagal membuat produk",
@@ -122,7 +149,8 @@ export default function ProductsPage() {
       description?: string;
       stock: number;
       imageFile?: File | null;
-    }
+      category_id: number;
+    },
   ) {
     try {
       const nid = typeof id === "number" ? id : Number(id);
@@ -384,6 +412,7 @@ export default function ProductsPage() {
             onCancel={() => setEditing(null)}
             onCreate={onCreate}
             onUpdate={onUpdate}
+            categories={categories}
           />
         </div>
       </div>

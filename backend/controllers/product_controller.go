@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 
 	"mini-ecommerce/models"
@@ -22,15 +23,41 @@ func NewProductController(db *gorm.DB) *ProductController {
 // CREATE PRODUCT
 // =======================
 func (pc *ProductController) Create(c *gin.Context) {
-	var product models.Product
+	name := c.PostForm("name")
+	price := c.PostForm("price")
+	description := c.PostForm("description")
+	stock := c.PostForm("stock")
+	categoryID := c.PostForm("category_id")
 
-	if err := c.ShouldBindJSON(&product); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+	file, err := c.FormFile("image")
+
+	var imagePath string
+
+	if err == nil {
+		imagePath = "uploads/products/" + file.Filename
+
+		if err := c.SaveUploadedFile(file, imagePath); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Gagal upload gambar",
+			})
+			return
+		}
 	}
 
+	product := models.Product{
+		Name:        name,
+		Description: description,
+		Image:       imagePath,
+	}
+
+	fmt.Sscanf(price, "%d", &product.Price)
+	fmt.Sscanf(stock, "%d", &product.Stock)
+	fmt.Sscanf(categoryID, "%d", &product.CategoryID)
+
 	if err := pc.DB.Create(&product).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
 		return
 	}
 
@@ -68,17 +95,52 @@ func (pc *ProductController) Update(c *gin.Context) {
 	var product models.Product
 	id := c.Param("id")
 
+	// cek produk ada atau tidak
 	if err := pc.DB.First(&product, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "produk tidak ditemukan"})
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "produk tidak ditemukan",
+		})
 		return
 	}
 
-	if err := c.ShouldBindJSON(&product); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+	// ambil data dari form-data
+	name := c.PostForm("name")
+	price := c.PostForm("price")
+	description := c.PostForm("description")
+	stock := c.PostForm("stock")
+	categoryID := c.PostForm("category_id")
+
+	// update field
+	product.Name = name
+	product.Description = description
+
+	fmt.Sscanf(price, "%d", &product.Price)
+	fmt.Sscanf(stock, "%d", &product.Stock)
+	fmt.Sscanf(categoryID, "%d", &product.CategoryID)
+
+	// cek apakah upload gambar baru
+	file, err := c.FormFile("image")
+
+	if err == nil {
+		imagePath := "uploads/products/" + file.Filename
+
+		if err := c.SaveUploadedFile(file, imagePath); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Gagal upload gambar",
+			})
+			return
+		}
+
+		product.Image = imagePath
 	}
 
-	pc.DB.Save(&product)
+	// simpan update
+	if err := pc.DB.Save(&product).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Gagal update produk",
+		})
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Produk berhasil diupdate",
