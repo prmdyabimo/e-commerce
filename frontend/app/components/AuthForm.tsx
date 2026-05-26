@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Swal from "sweetalert2";
 import { useRouter } from "next/navigation";
-import { signIn, signUp } from "../../lib/auth";
+import { getTokenRole, signIn, signUp } from "../../lib/auth";
 
 type Mode = "login" | "register";
 
@@ -27,8 +27,9 @@ export default function AuthForm({ mode }: { mode: Mode }) {
         if (res?.status === 200 && res.body?.token) {
           localStorage.setItem("token", res.body.token);
           localStorage.setItem("user_email", email.trim());
-          // redirect to admin dashboard after successful login
-          router.push("/admin");
+          const role = getTokenRole(res.body.token) || "user";
+          localStorage.setItem("user_role", role);
+          router.push(role === "admin" ? "/admin" : "/shop");
         } else {
           setError(res?.body?.error || res?.body?.message || "Login failed");
         }

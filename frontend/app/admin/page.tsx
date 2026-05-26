@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { fetchCategories, fetchProducts } from "../../lib/api";
+import { fetchCategories, fetchOrders, fetchProducts } from "../../lib/api";
 
 type Product = {
   id?: number;
@@ -27,31 +27,37 @@ function formatNumber(value: number) {
 export default function AdminIndex() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [orders, setOrders] = useState<{ id?: number; total_price?: number }[]>([]);
   const [loading, setLoading] = useState(true);
-  const [userName, setUserName] = useState("Admin");
-
-  useEffect(() => {
-    const email = localStorage.getItem("user_email");
-    if (email) {
-      setUserName(email.split("@")[0] || "Admin");
+  const [userName] = useState(() => {
+    if (typeof window === "undefined") {
+      return "Admin";
     }
-  }, []);
+
+    const email = localStorage.getItem("user_email") || "";
+    return email ? email.split("@")[0] || "Admin" : "Admin";
+  });
 
   useEffect(() => {
     (async () => {
-      try {
-        setLoading(true);
-        const [productData, categoryData] = await Promise.all([
-          fetchProducts(),
-          fetchCategories(),
-        ]);
-        setProducts(productData || []);
-        setCategories(categoryData || []);
-      } catch (err) {
-        console.error("load dashboard data error", err);
-      } finally {
-        setLoading(false);
+      setLoading(true);
+      const [productData, categoryData, orderData] = await Promise.allSettled([
+        fetchProducts(),
+        fetchCategories(),
+        fetchOrders(),
+      ]);
+
+      if (productData.status === "fulfilled") {
+        setProducts(productData.value || []);
       }
+      if (categoryData.status === "fulfilled") {
+        setCategories(categoryData.value || []);
+      }
+      if (orderData.status === "fulfilled") {
+        setOrders(orderData.value || []);
+      }
+
+      setLoading(false);
     })();
   }, []);
 
@@ -150,7 +156,7 @@ export default function AdminIndex() {
     },
     {
       label: "Total Pesanan",
-      value: 0,
+      value: orders.length,
       change: "+0% dari bulan lalu",
       trend: "up",
       icon: (

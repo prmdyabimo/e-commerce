@@ -25,6 +25,38 @@ export type Category = {
   name: string;
 };
 
+export type OrderStatus =
+  | "pending"
+  | "paid"
+  | "processed"
+  | "shipped"
+  | "completed"
+  | "cancelled";
+
+export type OrderItem = {
+  id?: number;
+  order_id?: number;
+  product_id: number;
+  quantity: number;
+  price?: number;
+  product?: Product;
+};
+
+export type Order = {
+  id?: number;
+  user_id?: number;
+  total_price?: number;
+  status?: OrderStatus | string;
+  address: string;
+  order_items?: OrderItem[];
+  user?: User;
+};
+
+export type OrderInputItem = {
+  product_id: number;
+  quantity: number;
+};
+
 // ===============================
 // API ROOT
 // ===============================
@@ -103,23 +135,39 @@ export async function createProduct(payload: {
   category_id: number;
   imageFile: File;
 }): Promise<Product> {
-  const formData = new FormData();
+  const imageFormData = new FormData();
+  imageFormData.append("image", payload.imageFile);
 
-  formData.append("name", payload.name);
-  formData.append("price", String(payload.price));
-  formData.append("stock", String(payload.stock));
-  formData.append("category_id", String(payload.category_id));
+  const uploadRes = await fetch(`${API_ROOT}/upload`, {
+    method: "POST",
+    body: imageFormData,
+  });
 
-  if (payload.description) {
-    formData.append("description", payload.description);
+  const uploadBody = await parseResponse(uploadRes);
+
+  if (!uploadRes.ok) {
+    throw new Error(
+      uploadBody?.error || uploadBody?.message || `Upload image failed: ${uploadRes.status}`,
+    );
   }
 
-  formData.append("image", payload.imageFile);
+  const imageUrl = uploadBody?.image_url;
+
+  if (!imageUrl || typeof imageUrl !== "string") {
+    throw new Error("Upload image failed: missing image_url");
+  }
 
   const res = await fetch(`${API_ROOT}/products`, {
     method: "POST",
-    headers: getAuthHeaders(false),
-    body: formData,
+    headers: getAuthHeaders(),
+    body: JSON.stringify({
+      name: payload.name,
+      price: payload.price,
+      stock: payload.stock,
+      category_id: payload.category_id,
+      description: payload.description ?? "",
+      image: imageUrl,
+    }),
   });
 
   const body = await parseResponse(res);
@@ -340,6 +388,27 @@ export async function updateUser(
   return body as User;
 }
 
+export async function createUser(payload: {
+  name: string;
+  email: string;
+  password: string;
+  role: "user" | "admin";
+}): Promise<User> {
+  const res = await fetch(`${API_ROOT}/users`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload),
+  });
+
+  const body = await parseResponse(res);
+
+  if (!res.ok) {
+    throw new Error(body?.error || body?.message || "Create user failed");
+  }
+
+  return body as User;
+}
+
 // ===============================
 // AUTH
 // ===============================
@@ -382,4 +451,82 @@ export async function login(payload: { email: string; password: string }) {
   }
 
   return body;
+}
+
+// ===============================
+// ORDERS
+// ===============================
+
+export async function fetchOrders(): Promise<Order[]> {
+  const res = await fetch(`${API_ROOT}/orders`, {
+    headers: getAuthHeaders(),
+  });
+
+  const body = await parseResponse(res);
+
+  if (!res.ok) {
+    throw new Error(
+      body?.error || body?.message || `Fetch orders failed: ${res.status}`,
+    );
+  }
+
+  return body as Order[];
+}
+
+export async function fetchOrderById(
+  id: string | number,
+): Promise<Order> {
+  const numericId = typeof id === "number" ? id : Number(id);
+
+  if (!Number.isFinite(numericId) || numericId <= 0) {
+    throw new Error("Invalid order id");
+  }
+
+  const res = await fetch(`${API_ROOT}/orders/${numericId}`, {
+    headers: getAuthHeaders(),
+  });
+
+  const body = await parseResponse(res);
+
+  if (!res.ok) {
+    throw new Error(
+      body?.error || body?.message || `Fetch order failed: ${res.status}`,
+    );
+  }
+
+  return body as Order;
+}
+
+export async function createOrder(payload: {
+  address: string;
+  items: OrderInputItem[];
+}): Promise<Order> {
+  const trimmedAddress = payload.address.trim();
+
+  if (!trimmedAddress) {
+    throw new Error("Address is required");
+  }
+
+  if (!Array.isArray(payload.items) || payload.items.length === 0) {
+    throw new Error("Order items are required");
+  }
+
+  const res = await fetch(`${API_ROOT}/orders`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({
+      address: trimmedAddress,
+      items: payload.items,
+    }),
+  });
+
+  const body = await parseResponse(res);
+
+  if (!res.ok) {
+    throw new Error(
+      body?.error || body?.message || `Create order failed: ${res.status}`,
+    );
+  }
+
+  return body as Order;
 }

@@ -2,17 +2,23 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import Swal from "sweetalert2";
-import { fetchUsers, updateUser } from "../../../lib/api";
+import { createUser, fetchUsers, updateUser } from "../../../lib/api";
 import UserForm from "../../../components/UserForm";
 
-type User = { id?: number; name?: string; email?: string };
+type User = { id?: number; name?: string; email?: string; role?: string };
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [editing, setEditing] = useState<User | null>(null);
+  const [creating, setCreating] = useState(false);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [userName, setUserName] = useState("Admin");
+  const [createName, setCreateName] = useState("");
+  const [createEmail, setCreateEmail] = useState("");
+  const [createPassword, setCreatePassword] = useState("");
+  const [createRole, setCreateRole] = useState<"user" | "admin">("user");
+  const [saving, setSaving] = useState(false);
 
   async function load() {
     try {
@@ -26,7 +32,8 @@ export default function UsersPage() {
         const id = Number.isFinite(parsedId) ? parsedId : undefined;
         const name = String(rec.name ?? rec.Name ?? "").trim();
         const email = String(rec.email ?? rec.Email ?? "").trim();
-        return { id, name, email };
+        const role = String(rec.role ?? rec.Role ?? "user").trim() || "user";
+        return { id, name, email, role };
       });
       setUsers(normalized);
     } finally {
@@ -54,6 +61,53 @@ export default function UsersPage() {
       );
     });
   }, [users, search]);
+
+  async function onCreateUser() {
+    const name = createName.trim();
+    const email = createEmail.trim();
+    const password = createPassword.trim();
+
+    if (!name || !email || !password) {
+      await Swal.fire({
+        icon: "warning",
+        title: "Incomplete form",
+        text: "Name, email, and password are required.",
+      });
+      return;
+    }
+
+    try {
+      setSaving(true);
+      await createUser({
+        name,
+        email,
+        password,
+        role: createRole,
+      });
+      await load();
+      setCreating(false);
+      setCreateName("");
+      setCreateEmail("");
+      setCreatePassword("");
+      setCreateRole("user");
+      await Swal.fire({
+        icon: "success",
+        title: "Success",
+        text: "User created successfully.",
+        timer: 1600,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      await Swal.fire({
+        icon: "error",
+        title: "Failed to create user",
+        text: message,
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function onUpdate(
     id: string | number,
@@ -111,8 +165,16 @@ export default function UsersPage() {
               Manage registered user profiles.
             </p>
           </div>
-          <div className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-300">
-            {users.length} users
+          <div className="flex items-center gap-2">
+            <div className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-300">
+              {users.length} users
+            </div>
+            <button
+              className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm"
+              onClick={() => setCreating(true)}
+            >
+              + Add User
+            </button>
           </div>
         </div>
       </div>
@@ -194,7 +256,7 @@ export default function UsersPage() {
                       </td>
                       <td className="px-4 py-4">
                         <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
-                          Active
+                          {u.role || "user"}
                         </span>
                       </td>
                       <td className="px-4 py-4">
@@ -273,6 +335,97 @@ export default function UsersPage() {
                 onUpdate={onUpdate}
                 onCancel={() => setEditing(null)}
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {creating && (
+        <div
+          className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 p-4"
+          onClick={() => setCreating(false)}
+        >
+          <div
+            className="mx-auto my-4 flex min-h-[calc(100vh-2rem)] w-full max-w-lg items-center sm:my-6 sm:min-h-[calc(100vh-3rem)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="max-h-[calc(100vh-2rem)] w-full overflow-y-auto rounded-2xl bg-white p-5 shadow-xl dark:border dark:border-slate-800 dark:bg-slate-900 sm:max-h-[calc(100vh-3rem)] sm:p-6">
+              <div className="mb-4 flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                    Add User
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Create a new user or admin account.
+                  </p>
+                </div>
+                <button
+                  className="rounded-lg border border-slate-200 p-2 text-slate-500 hover:text-slate-700 dark:border-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                  onClick={() => setCreating(false)}
+                >
+                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M6 6l12 12M18 6l-12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Name</label>
+                  <input
+                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                    value={createName}
+                    onChange={(e) => setCreateName(e.target.value)}
+                    placeholder="User full name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Email</label>
+                  <input
+                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                    type="email"
+                    value={createEmail}
+                    onChange={(e) => setCreateEmail(e.target.value)}
+                    placeholder="user@example.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Password</label>
+                  <input
+                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                    type="password"
+                    value={createPassword}
+                    onChange={(e) => setCreatePassword(e.target.value)}
+                    placeholder="Initial password"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Role</label>
+                  <select
+                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                    value={createRole}
+                    onChange={(e) => setCreateRole(e.target.value as "user" | "admin")}
+                  >
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <button
+                    className="w-full rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-60"
+                    onClick={onCreateUser}
+                    disabled={saving}
+                  >
+                    {saving ? "Saving..." : "Create"}
+                  </button>
+                  <button
+                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                    onClick={() => setCreating(false)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

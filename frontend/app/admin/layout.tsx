@@ -3,8 +3,17 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { usePathname } from "next/navigation";
-import { useTheme } from "../providers";
 import AdminSidebar from "../../components/AdminSidebar";
+
+type Theme = "light" | "dark";
+
+function getInitialTheme(): Theme {
+  if (typeof window === "undefined") {
+    return "light";
+  }
+
+  return (localStorage.getItem("admin-theme") as Theme | null) || "light";
+}
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -13,7 +22,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [authorized, setAuthorized] = useState(false);
   const [checking, setChecking] = useState(true);
   const [userEmail, setUserEmail] = useState("");
-  const { theme, toggleTheme } = useTheme();
+  const [theme, setTheme] = useState<Theme>(getInitialTheme);
+
+  function toggleTheme() {
+    setTheme((current) => {
+      const nextTheme: Theme = current === "light" ? "dark" : "light";
+      if (typeof window !== "undefined") {
+        localStorage.setItem("admin-theme", nextTheme);
+      }
+      return nextTheme;
+    });
+  }
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -38,6 +57,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       "/admin": "Dashboard",
       "/admin/products": "Products",
       "/admin/categories": "Categories",
+      "/admin/orders": "Orders",
       "/admin/users": "Users",
     };
     const currentTitle = titles[pathname] || "Admin";
@@ -52,13 +72,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const initials = displayName ? displayName.slice(0, 1).toUpperCase() : "A";
 
   return (
-    <div className={`min-h-screen ${theme === "dark" ? "bg-slate-950" : "bg-[#f5f7fb]"}`}>
+    <div data-theme={theme} className={`min-h-screen ${theme === "dark" ? "bg-slate-950" : "bg-[#f5f7fb]"}`}>
       <div className="px-3 py-3 sm:px-4 sm:py-4">
         <div className="relative">
           <AdminSidebar
             open={open}
             onToggle={() => setOpen((v) => !v)}
             className="lg:z-30"
+            theme={theme}
           />
 
           <div className="flex min-w-0 flex-1 flex-col gap-5 lg:ml-[304px] lg:gap-6">

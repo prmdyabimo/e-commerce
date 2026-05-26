@@ -3,21 +3,23 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useTheme } from "../app/providers";
 import Swal from "sweetalert2";
+
+type Theme = "light" | "dark";
 
 export default function AdminSidebar({
   open,
   onToggle,
   className,
+  theme,
 }: {
   open?: boolean;
   onToggle?: () => void;
   className?: string;
+  theme: Theme;
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { theme } = useTheme();
 
   const navSections = [
     {
@@ -61,6 +63,7 @@ export default function AdminSidebar({
         },
         {
           label: "Orders",
+          href: "/admin/orders",
           icon: (
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M3 5h2l2 11h11l2-7H7" />
@@ -68,7 +71,6 @@ export default function AdminSidebar({
               <circle cx="17" cy="19" r="1.5" />
             </svg>
           ),
-          disabled: true,
         },
         {
           label: "Users",
