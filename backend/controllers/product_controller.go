@@ -23,43 +23,26 @@ func NewProductController(db *gorm.DB) *ProductController {
 // CREATE PRODUCT
 // =======================
 func (pc *ProductController) Create(c *gin.Context) {
-	name := c.PostForm("name")
-	price := c.PostForm("price")
-	description := c.PostForm("description")
-	stock := c.PostForm("stock")
-	categoryID := c.PostForm("category_id")
+	var product models.Product
 
-	file, err := c.FormFile("image")
-
-	var imagePath string
-
-	if err == nil {
-		imagePath = "uploads/products/" + file.Filename
-
-		if err := c.SaveUploadedFile(file, imagePath); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": "Gagal upload gambar",
-			})
-			return
-		}
+	// bind raw json to struct
+	if err := c.ShouldBindJSON(&product); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
 	}
 
-	product := models.Product{
-		Name:        name,
-		Description: description,
-		Image:       imagePath,
-	}
-
-	fmt.Sscanf(price, "%d", &product.Price)
-	fmt.Sscanf(stock, "%d", &product.Stock)
-	fmt.Sscanf(categoryID, "%d", &product.CategoryID)
-
+	// save to database
 	if err := pc.DB.Create(&product).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
 		return
 	}
+
+	// take relation category
+	pc.DB.Preload("Category").First(&product, product.ID)
 
 	c.JSON(http.StatusCreated, product)
 }
@@ -69,7 +52,7 @@ func (pc *ProductController) Create(c *gin.Context) {
 // =======================
 func (pc *ProductController) GetAll(c *gin.Context) {
 	var products []models.Product
-	pc.DB.Find(&products)
+	pc.DB.Preload("Category").Find(&products)
 	c.JSON(http.StatusOK, products)
 }
 
@@ -80,8 +63,8 @@ func (pc *ProductController) GetByID(c *gin.Context) {
 	var product models.Product
 	id := c.Param("id")
 
-	if err := pc.DB.First(&product, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "produk tidak ditemukan"})
+	if err := pc.DB.Preload("Category").First(&product, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
 		return
 	}
 
@@ -98,12 +81,12 @@ func (pc *ProductController) Update(c *gin.Context) {
 	// cek produk ada atau tidak
 	if err := pc.DB.First(&product, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"error": "produk tidak ditemukan",
+			"error": "Product not found",
 		})
 		return
 	}
 
-	// ambil data dari form-data
+	// take data from form data
 	name := c.PostForm("name")
 	price := c.PostForm("price")
 	description := c.PostForm("description")
@@ -118,7 +101,7 @@ func (pc *ProductController) Update(c *gin.Context) {
 	fmt.Sscanf(stock, "%d", &product.Stock)
 	fmt.Sscanf(categoryID, "%d", &product.CategoryID)
 
-	// cek apakah upload gambar baru
+	// check image new
 	file, err := c.FormFile("image")
 
 	if err == nil {
@@ -126,7 +109,7 @@ func (pc *ProductController) Update(c *gin.Context) {
 
 		if err := c.SaveUploadedFile(file, imagePath); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": "Gagal upload gambar",
+				"error": "Failed to upload image",
 			})
 			return
 		}
@@ -134,16 +117,16 @@ func (pc *ProductController) Update(c *gin.Context) {
 		product.Image = imagePath
 	}
 
-	// simpan update
+	//save update
 	if err := pc.DB.Save(&product).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Gagal update produk",
+			"error": "Failed to update product",
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Produk berhasil diupdate",
+		"message": "Update product success",
 		"data":    product,
 	})
 }
@@ -155,11 +138,11 @@ func (pc *ProductController) Delete(c *gin.Context) {
 	id := c.Param("id")
 
 	if err := pc.DB.Delete(&models.Product{}, id).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "gagal hapus produk"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete product"})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Produk berhasil dihapus",
+		"message": "Successfully delete product",
 	})
 }

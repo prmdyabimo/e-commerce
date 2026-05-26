@@ -7,7 +7,7 @@ import (
 	"gorm.io/gorm"
 )
 
-//initdb membuat dan mengembalikan koneksi database
+//initdb creates and restores database connections
 func InitDB() *gorm.DB {
 	
 	dsn := "root:@tcp(127.0.0.1:3306)/mini_ecommerce?charset=utf8mb4&parseTime=True&loc=Local"

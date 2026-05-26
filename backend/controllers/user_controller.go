@@ -35,7 +35,7 @@ func (uc *UserController) GetByID(c *gin.Context) {
 	id := c.Param("id")
 
 	if err := uc.DB.First(&user, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "User tidak ditemukan"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}
 
@@ -49,11 +49,11 @@ func (uc *UserController) Delete(c *gin.Context) {
 	id := c.Param("id")
 
 	if err := uc.DB.Delete(&models.User{}, id).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal hapus user"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete user"})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "User berhasil dihapus",
+		"message": "Success to delete user",
 	})
 }

@@ -17,20 +17,20 @@ import (
 
 func main() {
 
-	log.Println("DEBUG: program mulai")
+	log.Println("DEBUG: program started")
 
 	err := godotenv.Load()
 	if err != nil {
-		log.Println("DEBUG: .env tidak ditemukan")
+		log.Println("DEBUG: .env not found")
 	} else {
-		log.Println("DEBUG: .env berhasil diload")
+		log.Println("DEBUG: .env success to load")
 	}
 
 	apiKey := os.Getenv("API_KEY")
 	log.Println("DEBUG: API_KEY =", apiKey)
 
 	if apiKey == "" {
-		log.Fatal("API_KEY tidak ditemukan di env")
+		log.Fatal("API_KEY not found in env")
 	}
 
 	// =====================
@@ -39,7 +39,7 @@ func main() {
 	r := gin.Default()
 
 	// static file (upload image)
-	r.Static("/uploads", "./uploads")
+	r.StaticFS("/uploads", gin.Dir("uploads", false))
 
 	// enable CORS
 	r.Use(cors.New(cors.Config{
@@ -73,8 +73,8 @@ func main() {
 
 	db.AutoMigrate(
 		&models.User{},
-		&models.Product{},
 		&models.Category{},
+		&models.Product{},
 	)
 
 	// =====================

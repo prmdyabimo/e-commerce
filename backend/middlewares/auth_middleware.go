@@ -12,21 +12,21 @@ import (
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
-		//ambil authorization header
+		//get authorization header
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Authorization tidak ada",
+				"error": "Authorization does not exist",
 			})
 			c.Abort()
 			return
 		}
 
-		//format harus : bearer token
+		//Authorization does not exist
 		parts := strings.Split(authHeader, " ")
 		if len(parts) != 2 || parts[0] != "Bearer" {
 			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Format token salah",
+				"error": "Wrong format token",
 			})
 			c.Abort()
 			return
@@ -34,31 +34,31 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		tokenString := parts[1]
 
-		//parse dan validasi token
+		//parse and validasi token
 		token, err := utils.ValidateToken(tokenString)
 		if err != nil || !token.Valid {
 			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Token Tidak Valid",
+				"error": "Token does not valid",
 			})
 			c.Abort()
 			return
 		}
 
-		//ambil claims
+		//get claims
 		claims, ok := token.Claims.(jwt.MapClaims)
 		if !ok {
 			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Claims Tidak Valid",
+				"error": "Claims does not valid",
 			})
 			c.Abort()
 			return
 		}
 
-		//simpan user id dan role ke context
+		//save user id and role to context
 		c.Set("user_id", claims["user_id"])
 		c.Set("role", claims["role"])
 
-		//lanjut ke controller
+		//next to controller
 		c.Next()
 	}
 }

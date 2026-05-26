@@ -9,7 +9,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// struct controller agar db bisa dipakai di semua method
+// struct controller so that db can be used in all methods
 type CategoryController struct {
 	DB *gorm.DB
 }
@@ -23,7 +23,7 @@ func NewCategoryController(db *gorm.DB) *CategoryController {
 func (cc *CategoryController) Create(c *gin.Context) {
 	var category models.Category
 
-	//ambil json dari request body dan mapping ke struct
+	//take json from request body and map it to struct
 	if err := c.ShouldBindJSON(&category); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err.Error(),
@@ -31,7 +31,7 @@ func (cc *CategoryController) Create(c *gin.Context) {
 		return
 	}
 
-	//simpan ke databse
+	//keep in database
 	if err := cc.DB.Create(&category).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -39,7 +39,7 @@ func (cc *CategoryController) Create(c *gin.Context) {
 		return
 	}
 
-	//response suskse
+	//response succes
 	c.JSON(http.StatusCreated, category)
 }
 
@@ -47,7 +47,7 @@ func (cc *CategoryController) Create(c *gin.Context) {
 func (cc *CategoryController) FindAll(c *gin.Context) {
 	var categories []models.Category
 
-	//preload("products") = ambil category + produk di dalamnya
+	//preload("products") = get category + products in it
 	cc.DB.Preload("Products").Find(&categories)
 
 	c.JSON(http.StatusOK, categories)
@@ -58,7 +58,7 @@ func (cc *CategoryController) FindByID(c *gin.Context) {
 	var category models.Category
 	id := c.Param("id")
 
-	//cari berdasarkan id + preload products
+	//search by id + preload products
 	if err := cc.DB.Preload("Products").First(&category, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error": "Category Not Found",
@@ -73,14 +73,14 @@ func (cc *CategoryController) Update(c *gin.Context) {
 	var category models.Category
 	id := c.Param("id")
 
-	//cek apakah data ada
+	//check if the data exists
 	if err := cc.DB.First(&category, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error": "Category Not Found",
 		})
 		return
 	}
-	//ambil data baru dari request
+	//take data from request
 	if err := c.ShouldBindJSON(&category); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err.Error(),
@@ -88,7 +88,7 @@ func (cc *CategoryController) Update(c *gin.Context) {
 		return
 	}
 
-	//simpan perubahan
+	//save changes
 	cc.DB.Save(&category)
 
 	c.JSON(http.StatusOK, category)
@@ -97,7 +97,7 @@ func (cc *CategoryController) Update(c *gin.Context) {
 func (cc *CategoryController) Delete(c *gin.Context) {
 	id := c.Param("id")
 
-	//hapus berdasarkan id
+	//delete by id
 	cc.DB.Delete(&models.Category{}, id)
 
 	c.JSON(http.StatusOK, gin.H{

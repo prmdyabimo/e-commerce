@@ -26,33 +26,33 @@ func (ac *AuthController) Login(c *gin.Context) {
 	var input models.User
 	var user models.User
 
-	// ambil email & password
+	// get email & password
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// cari user berdasarkan email
+	// find user by email
 	if err := ac.DB.Where("email = ?", input.Email).First(&user).Error; err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Email tidak ditemukan"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Email not found"})
 		return
 	}
 
-	// cek password
+	// check password
 	if !utils.CheckPassword(user.Password, input.Password) {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Password salah"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Wrong password"})
 		return
 	}
 
 	// generate JWT
 	token, err := utils.GenerateToken(user.ID, user.Role)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal generate token"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Login berhasil",
+		"message": "Login success",
 		"token":   token,
 	})
 }
@@ -68,11 +68,11 @@ func (ac *AuthController) Register(c *gin.Context) {
 		return
 	}
 
-	// cek email sudah terdaftar atau belum
+	// Check whether your email is registered or not
 	var existingUser models.User
 	if err := ac.DB.Where("email = ?", user.Email).First(&existingUser).Error; err == nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Email sudah terdaftar",
+			"error": "Email has already exist",
 		})
 		return
 	}
@@ -84,21 +84,21 @@ func (ac *AuthController) Register(c *gin.Context) {
 	hashedPassword, err := utils.HashPassword(user.Password)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Gagal hash password",
+			"error": "Failed to hash password",
 		})
 		return
 	}
 	user.Password = hashedPassword
 
-	// simpan ke database
+	// save databbase
 	if err := ac.DB.Create(&user).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Gagal register",
+			"error": "Failed to register",
 		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Register berhasil",
+		"message": "Register success",
 	})
 }
