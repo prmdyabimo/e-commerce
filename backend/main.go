@@ -75,6 +75,8 @@ func main() {
 		&models.User{},
 		&models.Category{},
 		&models.Product{},
+		&models.Order{},
+		&models.OrderItem{},
 	)
 
 	// =====================
