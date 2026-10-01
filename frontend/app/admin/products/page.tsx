@@ -205,8 +205,8 @@ export default function ProductsPage() {
 
       await Swal.fire({
         icon: "success",
-        title: "Success",
-        text: "Product created successfully.",
+        title: "Berhasil",
+        text: "Produk berhasil ditambahkan.",
         timer: 1600,
         showConfirmButton: false,
       });
@@ -217,7 +217,7 @@ export default function ProductsPage() {
 
       await Swal.fire({
         icon: "error",
-        title: "Failed to create product",
+        title: "Produk gagal ditambahkan",
         text: message,
       });
     }
@@ -240,8 +240,8 @@ export default function ProductsPage() {
         console.error("Invalid product id for update", id);
         await Swal.fire({
           icon: "error",
-          title: "Update failed",
-          text: "Invalid product ID.",
+          title: "Pembaruan gagal",
+          text: "ID produk tidak valid.",
         });
         return;
       }
@@ -250,8 +250,8 @@ export default function ProductsPage() {
       setEditing(null);
       await Swal.fire({
         icon: "success",
-        title: "Success",
-        text: "Product updated successfully.",
+        title: "Berhasil",
+        text: "Produk berhasil diperbarui.",
         timer: 1600,
         showConfirmButton: false,
       });
@@ -260,7 +260,7 @@ export default function ProductsPage() {
       const message = err instanceof Error ? err.message : String(err);
       await Swal.fire({
         icon: "error",
-        title: "Failed to update product",
+        title: "Produk gagal diperbarui",
         text: message,
       });
     }
@@ -268,12 +268,12 @@ export default function ProductsPage() {
 
   async function onDelete(id: string | number) {
     const confirmResult = await Swal.fire({
-      title: "Delete product?",
-      text: "The product will be deactivated (soft delete).",
+      title: "Hapus produk?",
+      text: "Produk akan dinonaktifkan dan tidak dihapus permanen.",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonText: "Delete",
-      cancelButtonText: "Cancel",
+      confirmButtonText: "Hapus",
+      cancelButtonText: "Batal",
     });
     if (!confirmResult.isConfirmed) return;
     try {
@@ -282,8 +282,8 @@ export default function ProductsPage() {
         console.error("Invalid product id for delete", id);
         await Swal.fire({
           icon: "error",
-          title: "Delete failed",
-          text: "Invalid product ID.",
+          title: "Produk gagal dihapus",
+          text: "ID produk tidak valid.",
         });
         return;
       }
@@ -293,8 +293,8 @@ export default function ProductsPage() {
       setEditing(null);
       await Swal.fire({
         icon: "success",
-        title: "Success",
-        text: "Product deleted successfully.",
+        title: "Berhasil",
+        text: "Produk berhasil dihapus.",
         timer: 1600,
         showConfirmButton: false,
       });
@@ -303,7 +303,7 @@ export default function ProductsPage() {
       const message = err instanceof Error ? err.message : String(err);
       await Swal.fire({
         icon: "error",
-        title: "Failed to delete product",
+        title: "Produk gagal dihapus",
         text: message,
       });
     } finally {
@@ -316,11 +316,11 @@ export default function ProductsPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Welcome back, {userName} 👋
+            Selamat datang, {userName} 👋
           </p>
-          <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Products</h1>
+          <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Produk</h1>
         </div>
-        <div className="text-xs text-slate-400 dark:text-slate-500">Dashboard / Products</div>
+        <div className="text-xs text-slate-400 dark:text-slate-500">Dashboard / Produk</div>
       </div>
 
       <div className="space-y-4">
@@ -328,14 +328,14 @@ export default function ProductsPage() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                  Product List
+                  Daftar produk
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Manage all products in your catalog.
+                  Kelola seluruh produk di katalog toko.
                 </p>
               </div>
               <button
-                className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm"
+                className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
                 onClick={() =>
                   setEditing({
                     ...emptyProduct,
@@ -343,7 +343,7 @@ export default function ProductsPage() {
                   })
                 }
               >
-                + Add Product
+                + Tambah produk
               </button>
             </div>
           </div>
@@ -359,7 +359,7 @@ export default function ProductsPage() {
                 </span>
                 <input
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm text-slate-700 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500"
-                  placeholder="Search products..."
+                  placeholder="Cari produk..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
@@ -369,7 +369,7 @@ export default function ProductsPage() {
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
               >
-                <option value="all">All Categories</option>
+                <option value="all">Semua kategori</option>
                 {categories.map((cat) => (
                   <option key={cat.id} value={String(cat.id)}>
                     {cat.name}
@@ -381,18 +381,18 @@ export default function ProductsPage() {
                 value={sortFilter}
                 onChange={(e) => setSortFilter(e.target.value)}
               >
-                <option value="newest">Sort: Newest</option>
-                <option value="price-high">Price: Highest</option>
-                <option value="price-low">Price: Lowest</option>
+                <option value="newest">Urutkan: terbaru</option>
+                <option value="price-high">Harga: tertinggi</option>
+                <option value="price-low">Harga: terendah</option>
               </select>
               <select
                 className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
-                <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
+                <option value="all">Semua status</option>
+                <option value="active">Aktif</option>
+                <option value="inactive">Tidak aktif</option>
               </select>
               <button
                 className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
@@ -403,29 +403,29 @@ export default function ProductsPage() {
                   setStatusFilter("all");
                 }}
               >
-                Reset
+                Atur ulang
               </button>
             </div>
           </div>
 
           <div className="rounded-2xl border border-slate-200/70 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
             {loading ? (
-              <div className="p-6 text-sm text-slate-500 dark:text-slate-400">Loading products...</div>
+              <div className="p-6 text-sm text-slate-500 dark:text-slate-400">Memuat produk...</div>
             ) : filteredProducts.length === 0 ? (
               <div className="p-6 text-sm text-slate-500 dark:text-slate-400">
-                No products yet. Add your first product.
+                Belum ada produk. Tambahkan produk pertama Anda.
               </div>
             ) : (
               <div className="overflow-x-auto rounded-tl-2xl rounded-tr-2xl">
                 <table className="min-w-full text-sm">
                   <thead className="bg-slate-50 text-left text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                     <tr>
-                      <th className="px-4 py-3 font-medium">Product</th>
-                      <th className="px-4 py-3 font-medium">Category</th>
-                      <th className="px-4 py-3 font-medium">Price</th>
-                      <th className="px-4 py-3 font-medium">Stock</th>
+                      <th className="px-4 py-3 font-medium">Produk</th>
+                      <th className="px-4 py-3 font-medium">Kategori</th>
+                      <th className="px-4 py-3 font-medium">Harga</th>
+                      <th className="px-4 py-3 font-medium">Stok</th>
                       <th className="px-4 py-3 font-medium">Status</th>
-                      <th className="px-4 py-3 font-medium text-right">Actions</th>
+                      <th className="px-4 py-3 font-medium text-right">Aksi</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -441,27 +441,27 @@ export default function ProductsPage() {
                                 onClick={() =>
                                   setPreviewImage({
                                     src: imageUrl,
-                                    alt: item.name || "Product image",
-                                    name: item.name || "Product image",
+                                    alt: item.name || "Gambar produk",
+                                    name: item.name || "Gambar produk",
                                   })
                                 }
-                                title="View product image"
+                                title="Lihat gambar produk"
                               >
                                 <img src={imageUrl} alt={item.name} className="h-full w-full object-cover" />
                               </button>
                               <div>
                                 <div className="font-semibold text-slate-900 dark:text-slate-100">
-                                  {item.name || "Unnamed product"}
+                                  {item.name || "Produk tanpa nama"}
                                 </div>
                                 <div className="text-xs text-slate-500 dark:text-slate-400">
-                                  {item.description || "No description"}
+                                  {item.description || "Tidak ada deskripsi"}
                                 </div>
                               </div>
                             </div>
                           </td>
                           <td className="px-4 py-4">
                             <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                              {item.categoryLabel || "No category"}
+                              {item.categoryLabel || "Tanpa kategori"}
                             </span>
                           </td>
                           <td className="px-4 py-4 text-slate-700 dark:text-slate-300">
@@ -520,7 +520,7 @@ export default function ProductsPage() {
             {!loading && filteredProducts.length > 0 && (
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-4 py-3 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
                 <div>
-                  Showing 1 - {filteredProducts.length} of {normalizedProducts.length} products
+                  Menampilkan 1–{filteredProducts.length} dari {normalizedProducts.length} produk
                 </div>
                 <div className="flex items-center gap-2">
                   <button className="rounded-md border border-slate-200 px-2 py-1 text-slate-500 dark:border-slate-700 dark:text-slate-300">
@@ -551,10 +551,10 @@ export default function ProductsPage() {
               <div className="mb-4 flex items-start justify-between gap-4">
                 <div>
                   <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                    {editing?.id ? "Edit Product" : "Add New Product"}
+                    {editing?.id ? "Ubah produk" : "Tambah produk"}
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Complete the product information below.
+                    Lengkapi informasi produk berikut.
                   </p>
                 </div>
                 <button

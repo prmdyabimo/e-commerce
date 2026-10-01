@@ -6,6 +6,16 @@ import { usePathname, useRouter } from "next/navigation";
 import Swal from "sweetalert2";
 
 type Theme = "light" | "dark";
+type AdminNavItem = {
+  label: string;
+  href?: string;
+  icon: React.ReactNode;
+  disabled?: boolean;
+};
+type AdminNavSection = {
+  title: string;
+  items: AdminNavItem[];
+};
 
 export default function AdminSidebar({
   open,
@@ -21,9 +31,9 @@ export default function AdminSidebar({
   const router = useRouter();
   const pathname = usePathname();
 
-  const navSections = [
+  const navSections: AdminNavSection[] = [
     {
-      title: "Dashboard",
+      title: "Ringkasan",
       items: [
         {
           label: "Dashboard",
@@ -38,10 +48,10 @@ export default function AdminSidebar({
       ],
     },
     {
-      title: "Management",
+      title: "Manajemen toko",
       items: [
         {
-          label: "Products",
+          label: "Produk",
           href: "/admin/products",
           icon: (
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
@@ -51,7 +61,7 @@ export default function AdminSidebar({
           ),
         },
         {
-          label: "Categories",
+          label: "Kategori",
           href: "/admin/categories",
           icon: (
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
@@ -62,7 +72,7 @@ export default function AdminSidebar({
           ),
         },
         {
-          label: "Orders",
+          label: "Pesanan",
           href: "/admin/orders",
           icon: (
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
@@ -73,7 +83,7 @@ export default function AdminSidebar({
           ),
         },
         {
-          label: "Users",
+          label: "Pengguna",
           href: "/admin/users",
           icon: (
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
@@ -87,10 +97,10 @@ export default function AdminSidebar({
       ],
     },
     {
-      title: "Analytics",
+      title: "Analitik",
       items: [
         {
-          label: "Sales",
+          label: "Penjualan",
           icon: (
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M3 12h4l3-7 4 14 3-7h4" />
@@ -99,7 +109,7 @@ export default function AdminSidebar({
           disabled: true,
         },
         {
-          label: "Reports",
+          label: "Laporan",
           icon: (
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M4 4h16v16H4z" />
@@ -111,10 +121,10 @@ export default function AdminSidebar({
       ],
     },
     {
-      title: "Settings",
+      title: "Pengaturan",
       items: [
         {
-          label: "Profile",
+          label: "Profil",
           icon: (
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="12" cy="8" r="4" />
@@ -124,7 +134,7 @@ export default function AdminSidebar({
           disabled: true,
         },
         {
-          label: "Settings",
+          label: "Pengaturan",
           icon: (
             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M12 2l1.2 2.4 2.6.4-1.9 1.9.4 2.6L12 8.8 9.7 9.3l.4-2.6L8.2 4.8l2.6-.4L12 2z" />
@@ -149,6 +159,7 @@ export default function AdminSidebar({
     if (!confirmResult.isConfirmed) return;
     localStorage.removeItem("token");
     localStorage.removeItem("user_email");
+    localStorage.removeItem("user_role");
     await Swal.fire({
       icon: "success",
       title: "Successfully logged out",
@@ -173,7 +184,7 @@ export default function AdminSidebar({
       } lg:translate-x-0 ${className ?? ""}`}>
         <div className={`flex h-full min-h-0 flex-col gap-6 overflow-y-auto rounded-3xl ${theme === "dark" ? "bg-slate-900 border border-slate-800" : "bg-white"} p-5 shadow-sm`}>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-500 text-white">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-600 text-white">
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 3l9 6-9 6-9-6 9-6Z" />
                 <path d="M3 9v6l9 6 9-6V9" />
@@ -181,10 +192,10 @@ export default function AdminSidebar({
             </div>
             <div>
               <div className={`text-lg font-semibold ${theme === "dark" ? "text-white" : "text-slate-900"}`}>
-                E-Commerce
+                Gizmo<span className="text-blue-600">Hub</span>
               </div>
               <div className={`text-xs ${theme === "dark" ? "text-slate-400" : "text-slate-500"}`}>
-                Control panel
+                Control Panel
               </div>
             </div>
           </div>
@@ -203,8 +214,8 @@ export default function AdminSidebar({
                     const baseClass = "flex items-center gap-3 rounded-xl px-3 py-2 transition";
                     const activeClass = isActive
                       ? theme === "dark"
-                        ? "bg-indigo-900/40 text-indigo-400"
-                        : "bg-indigo-50 text-indigo-700"
+                        ? "bg-blue-900/40 text-blue-300"
+                        : "bg-blue-50 text-blue-700"
                       : theme === "dark"
                       ? "text-slate-400 hover:bg-slate-800 hover:text-slate-300"
                       : "text-slate-600 hover:bg-slate-50 hover:text-slate-900";
@@ -262,7 +273,7 @@ export default function AdminSidebar({
                 <path d="M9 6h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9" />
                 <path d="M16 12H4m0 0l4-4m-4 4 4 4" />
               </svg>
-              Logout
+              Keluar
             </button>
           </div>
         </div>

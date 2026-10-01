@@ -1,233 +1,67 @@
-# Backend Mini E-Commerce
+# Mini E-Commerce Backend
 
-Backend ini dibangun dengan **Go**, **Gin**, **GORM**, dan **MySQL** untuk mendukung fitur autentikasi, manajemen produk, kategori, dan user. Proyek ini juga menyediakan validasi **JWT** untuk akses protected route serta middleware **API Key** untuk endpoint tertentu.
-
-## Ringkasan Fitur
-
-- Register dan login user.
-- Autentikasi menggunakan JWT Bearer token.
-- CRUD produk.
-- CRUD kategori.
-- Manajemen user untuk admin.
-- Upload gambar produk ke folder `uploads/products`.
-- Endpoint health check dan endpoint secure berbasis API key.
-
-## Teknologi yang Digunakan
-
-- Go 1.24
-- Gin Gonic
-- GORM
-- MySQL
-- JWT (`github.com/golang-jwt/jwt/v5`)
-- bcrypt untuk hashing password
-- CORS support untuk frontend Next.js
-
-## Struktur Folder
-
-```text
-backend/
-├── config/        # Konfigurasi database
-├── controllers/   # Logic handler request
-├── middlewares/   # Middleware auth dan API key
-├── models/        # Struct model GORM
-├── routes/        # Definisi routing
-├── uploads/       # File upload image produk
-├── utils/         # Helper JWT dan password
-├── main.go        # Entry point server
-└── mini-ecommerce.sql # Dump database contoh
-```
+REST API untuk aplikasi e-commerce, dibangun menggunakan Go, Gin, GORM, dan MySQL.
 
 ## Prasyarat
 
 - Go 1.24+
 - MySQL 8+
-- Database bernama `mini_ecommerce`
-- Frontend berjalan di `http://localhost:3000` jika dipakai bersama project frontend
+- Node.js untuk menjalankan frontend
 
 ## Konfigurasi
 
-Secara default, backend membaca environment variable berikut:
-
-- `API_KEY` untuk middleware keamanan endpoint `/api/secure`
-
-Selain itu, koneksi database saat ini masih menggunakan DSN bawaan di `config/database.go`:
-
-```go
-root:@tcp(127.0.0.1:3306)/mini_ecommerce?charset=utf8mb4&parseTime=True&loc=Local
-```
-
-Pastikan MySQL lokal Anda sesuai dengan konfigurasi tersebut, atau ubah DSN pada file `config/database.go`.
-
-## Instalasi
-
-1. Masuk ke folder backend.
-2. Install dependency Go jika belum ada.
-3. Buat file `.env` pada folder backend dan isi `API_KEY`.
-
-Contoh:
+Salin `.env.example` menjadi `.env` di direktori `backend`, lalu atur nilainya:
 
 ```env
-API_KEY=secret-api-key-anda
+MYSQL_DSN=root:password@tcp(127.0.0.1:3306)/mini_ecommerce?charset=utf8mb4&parseTime=True&loc=Local
+JWT_SECRET=ganti-dengan-random-secret-minimal-32-karakter
+API_KEY=ganti-dengan-api-key-acak
+PORT=8080
 ```
 
-## Menjalankan Project
+`MYSQL_DSN` dan `JWT_SECRET` wajib diisi. `API_KEY` hanya digunakan oleh endpoint contoh `/api/secure`.
+Jangan commit file `.env` atau gunakan contoh secret di lingkungan produksi.
 
-### 1. Import database
+## Menjalankan
 
-Jalankan file `mini-ecommerce.sql` ke MySQL untuk membuat database awal.
-
-### 2. Jalankan server
+Import `mini-ecommerce.sql` bila perlu, lalu dari direktori `backend` jalankan:
 
 ```bash
-go run main.go
+go run .
 ```
 
-Server akan berjalan di:
+Server berjalan pada port `8080` secara default. Endpoint `/health` digunakan untuk health check.
 
-```text
-http://localhost:8080
-```
+## Akses API
 
-## Alur Otentikasi
+Endpoint produk dan kategori untuk katalog dapat diakses publik:
 
-- `POST /register` akan menyimpan user baru dengan role default `user`.
-- Password disimpan dalam bentuk hash bcrypt.
-- `POST /login` akan mengembalikan JWT token jika email dan password valid.
-- Endpoint protected wajib menyertakan header:
+| Method | Endpoint | Akses |
+| --- | --- | --- |
+| POST | `/register` | Publik |
+| POST | `/login` | Publik |
+| GET | `/products`, `/products/:id` | Publik |
+| GET | `/categories`, `/categories/:id` | Publik |
+| POST | `/orders` | User terautentikasi |
+| GET | `/orders`, `/orders/:id` | User terautentikasi; user hanya dapat membaca pesanannya sendiri |
+| POST/PUT/DELETE | `/products`, `/categories` | Admin |
+| POST | `/upload` | Admin |
+| GET/POST/PUT/DELETE | `/users` | Admin |
+
+Endpoint terlindungi menggunakan header:
 
 ```http
-Authorization: Bearer <token>
+Authorization: Bearer <jwt-token>
 ```
 
-## Endpoint API
+Login menerima email dan password, lalu mengembalikan token JWT berlaku selama 24 jam. Registrasi dan pembuatan user admin mensyaratkan password minimal 8 karakter. User baru melalui registrasi publik selalu mendapat role `user`.
 
-### Public
+Pembuatan produk menggunakan JSON. Update produk menggunakan `multipart/form-data` dengan field `name`, `price`, `description`, `stock`, `category_id`, dan `image` (opsional). Upload produk melalui `/upload` juga menggunakan field `image`.
 
-| Method | Endpoint | Keterangan |
-| --- | --- | --- |
-| GET | `/health` | Health check server |
-| POST | `/register` | Register user baru |
-| POST | `/login` | Login dan generate token |
+Order dibuat dengan alamat dan daftar produk/kuantitas. Harga diambil dari database, stok divalidasi dan dikurangi dalam transaksi database.
 
-### Secure API Key
+## Catatan
 
-| Method | Endpoint | Keterangan |
-| --- | --- | --- |
-| GET | `/api/secure` | Contoh endpoint yang wajib header `X-API-Key` |
-
-Header yang dibutuhkan:
-
-```http
-X-API-Key: <nilai_api_key>
-```
-
-### Protected JWT
-
-Semua endpoint berikut wajib mengirim JWT Bearer token pada header `Authorization`.
-
-#### Products
-
-| Method | Endpoint | Keterangan |
-| --- | --- | --- |
-| GET | `/products` | Ambil semua produk |
-| GET | `/products/:id` | Ambil detail produk |
-| POST | `/products` | Buat produk baru |
-| PUT | `/products/:id` | Update produk |
-| DELETE | `/products/:id` | Hapus produk |
-
-Request create/update produk menggunakan `multipart/form-data` dengan field:
-
-- `name`
-- `price`
-- `description`
-- `stock`
-- `category_id`
-- `image` (opsional untuk update, dan wajib jika ingin upload gambar baru)
-
-#### Users
-
-| Method | Endpoint | Keterangan |
-| --- | --- | --- |
-| GET | `/users` | Ambil semua user |
-| GET | `/users/:id` | Ambil detail user |
-| DELETE | `/users/:id` | Hapus user |
-
-#### Categories
-
-| Method | Endpoint | Keterangan |
-| --- | --- | --- |
-| GET | `/categories` | Ambil semua kategori beserta products |
-| GET | `/categories/:id` | Ambil detail kategori beserta products |
-| POST | `/categories` | Buat kategori baru |
-| PUT | `/categories/:id` | Update kategori |
-| DELETE | `/categories/:id` | Hapus kategori |
-
-Request body category menggunakan JSON:
-
-```json
-{
-	"name": "Elektronik"
-}
-```
-
-## Model Data
-
-### User
-
-- `id`
-- `name`
-- `email`
-- `password`
-- `role`
-
-### Product
-
-- `id`
-- `name`
-- `description`
-- `price`
-- `stock`
-- `image`
-- `category_id`
-- `category`
-
-### Category
-
-- `id`
-- `name`
-- `products`
-
-## Catatan Implementasi
-
-- Database di-auto migrate saat server dimulai.
-- Produk menyimpan file gambar ke folder `uploads/products`.
-- CORS sudah diaktifkan untuk frontend di `http://localhost:3000`.
-- JWT secret pada saat ini masih hardcoded di `utils/jwt.go`; jika ingin production-ready, pindahkan ke environment variable.
-
-## Contoh Response
-
-### Login berhasil
-
-```json
-{
-	"message": "Login berhasil",
-	"token": "<jwt-token>"
-}
-```
-
-### Endpoint secure
-
-```json
-{
-	"message": "API KEY VALID ✅"
-}
-```
-
-## Pengembangan Lanjutan
-
-Jika ingin melanjutkan pengembangan, langkah yang paling masuk akal adalah:
-
-- memindahkan DSN database ke environment variable,
-- memindahkan JWT secret ke environment variable,
-- menambahkan validasi request yang lebih ketat,
-- menambahkan role-based authorization untuk admin dan user.
+- GORM menjalankan AutoMigrate ketika server dimulai.
+- Gambar disimpan pada `uploads/products`.
+- Untuk frontend Next.js, atur `API_URL=http://localhost:8080` pada environment frontend agar server-side API proxy dapat terhubung ke backend. `NEXT_PUBLIC_API_URL` digunakan frontend untuk URL gambar.

@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"crypto/subtle"
 	"net/http"
 	"os"
 
@@ -12,7 +13,8 @@ func APIKeyMiddleware() gin.HandlerFunc {
 		clientKey := c.GetHeader("X-API-Key")
 		serverKey := os.Getenv("API_KEY")
 
-		if clientKey == "" || clientKey != serverKey {
+		if clientKey == "" || serverKey == "" ||
+			subtle.ConstantTimeCompare([]byte(clientKey), []byte(serverKey)) != 1 {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"message": "Unauthorized - API Key Invalid",
 			})

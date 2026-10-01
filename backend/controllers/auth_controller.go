@@ -1,7 +1,9 @@
 package controllers
 
 import (
+	"errors"
 	"net/http"
+	"strings"
 
 	"mini-ecommerce/models"
 	"mini-ecommerce/utils"
@@ -19,32 +21,41 @@ func NewAuthController(db *gorm.DB) *AuthController {
 	return &AuthController{DB: db}
 }
 
-// =======================
-// LOGIN
-// =======================
+type loginRequest struct {
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required"`
+}
+
+type registerRequest struct {
+	Name     string `json:"name" binding:"required"`
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required,min=8"`
+}
+
 func (ac *AuthController) Login(c *gin.Context) {
-	var input models.User
+	var input loginRequest
 	var user models.User
 
-	// get email & password
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// find user by email
+	input.Email = strings.ToLower(strings.TrimSpace(input.Email))
 	if err := ac.DB.Where("email = ?", input.Email).First(&user).Error; err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Email not found"})
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to authenticate"})
 		return
 	}
 
-	// check password
 	if !utils.CheckPassword(user.Password, input.Password) {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Wrong password"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
 		return
 	}
 
-	// generate JWT
 	token, err := utils.GenerateToken(user.ID, user.Role)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
@@ -57,48 +68,46 @@ func (ac *AuthController) Login(c *gin.Context) {
 	})
 }
 
-// =======================
-// REGISTER
-// =======================
 func (ac *AuthController) Register(c *gin.Context) {
-	var user models.User
+	var input registerRequest
 
-	if err := c.ShouldBindJSON(&user); err != nil {
+	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Check whether your email is registered or not
-	var existingUser models.User
-	if err := ac.DB.Where("email = ?", user.Email).First(&existingUser).Error; err == nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Email has already exist",
-		})
+	user := models.User{
+		Name:  strings.TrimSpace(input.Name),
+		Email: strings.ToLower(strings.TrimSpace(input.Email)),
+		Role:  "user",
+	}
+	if user.Name == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Name is required"})
 		return
 	}
 
-	// set role default
-	user.Role = "user"
+	var existingUser models.User
+	err := ac.DB.Where("email = ?", user.Email).First(&existingUser).Error
+	if err == nil {
+		c.JSON(http.StatusConflict, gin.H{"error": "Email is already registered"})
+		return
+	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to register"})
+		return
+	}
 
-	// hash password
-	hashedPassword, err := utils.HashPassword(user.Password)
+	hashedPassword, err := utils.HashPassword(input.Password)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to hash password",
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
 		return
 	}
 	user.Password = hashedPassword
 
-	// save databbase
 	if err := ac.DB.Create(&user).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to register",
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to register"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Register success",
-	})
+	c.JSON(http.StatusCreated, gin.H{"message": "Register success"})
 }

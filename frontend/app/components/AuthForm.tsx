@@ -99,9 +99,10 @@ export default function AuthForm({ mode }: { mode: Mode }) {
           <input
             className="block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 pr-10 text-slate-900 shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500"
             type={showPassword ? "text" : "password"}
+            minLength={mode === "register" ? 8 : undefined}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="At least 4 characters"
+            placeholder={mode === "register" ? "At least 8 characters" : "Enter your password"}
             required
           />
           <button

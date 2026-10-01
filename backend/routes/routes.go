@@ -20,43 +20,39 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB) {
 	uploadController := controllers.NewUploadController()
 	orderController := controllers.NewOrderController(db)
 
-	// =====================
-	// PUBLIC ROUTES
-	// =====================
 	r.POST("/register", authController.Register)
 	r.POST("/login", authController.Login)
 
-	// PUBLIC UPLOAD
-	r.POST("/upload", uploadController.UploadProductImage)
+	r.GET("/products", productController.GetAll)
+	r.GET("/products/:id", productController.GetByID)
+	r.GET("/categories", categoryController.FindAll)
+	r.GET("/categories/:id", categoryController.FindByID)
 
-	// =====================
-	// PROTECTED ROUTES
-	// =====================
 	protected := r.Group("/")
 	protected.Use(middlewares.AuthMiddleware())
 	{
-		// ===== PRODUCTS =====
-		protected.POST("/products", productController.Create)
-		protected.GET("/products", productController.GetAll)
-		protected.GET("/products/:id", productController.GetByID)
-		protected.PUT("/products/:id", productController.Update)
-		protected.DELETE("/products/:id", productController.Delete)
-
-		// ===== USERS =====
-		protected.GET("/users", userController.GetAll)
-		protected.GET("/users/:id", userController.GetByID)
-		protected.DELETE("/users/:id", userController.Delete)
-
-		// ===== CATEGORIES =====
-		protected.POST("/categories", categoryController.Create)
-		protected.GET("/categories", categoryController.FindAll)
-		protected.GET("/categories/:id", categoryController.FindByID)
-		protected.PUT("/categories/:id", categoryController.Update)
-		protected.DELETE("/categories/:id", categoryController.Delete)
-
-		// ===== ORDERS =====
 		protected.POST("/orders", orderController.Create)
 		protected.GET("/orders", orderController.GetAll)
 		protected.GET("/orders/:id", orderController.GetByID)
+	}
+
+	admin := protected.Group("/")
+	admin.Use(middlewares.RequireRole("admin"))
+	{
+		admin.POST("/upload", uploadController.UploadProductImage)
+
+		admin.POST("/products", productController.Create)
+		admin.PUT("/products/:id", productController.Update)
+		admin.DELETE("/products/:id", productController.Delete)
+
+		admin.GET("/users", userController.GetAll)
+		admin.GET("/users/:id", userController.GetByID)
+		admin.POST("/users", userController.Create)
+		admin.PUT("/users/:id", userController.Update)
+		admin.DELETE("/users/:id", userController.Delete)
+
+		admin.POST("/categories", categoryController.Create)
+		admin.PUT("/categories/:id", categoryController.Update)
+		admin.DELETE("/categories/:id", categoryController.Delete)
 	}
 }

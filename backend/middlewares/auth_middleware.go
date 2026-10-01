@@ -1,9 +1,10 @@
 package middlewares
 
 import (
-	"mini-ecommerce/utils"
 	"net/http"
 	"strings"
+
+	"mini-ecommerce/utils"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -12,7 +13,6 @@ import (
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
-		//get authorization header
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{
@@ -22,7 +22,6 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		//Authorization does not exist
 		parts := strings.Split(authHeader, " ")
 		if len(parts) != 2 || parts[0] != "Bearer" {
 			c.JSON(http.StatusUnauthorized, gin.H{
@@ -34,7 +33,6 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		tokenString := parts[1]
 
-		//parse and validasi token
 		token, err := utils.ValidateToken(tokenString)
 		if err != nil || !token.Valid {
 			c.JSON(http.StatusUnauthorized, gin.H{
@@ -44,7 +42,6 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		//get claims
 		claims, ok := token.Claims.(jwt.MapClaims)
 		if !ok {
 			c.JSON(http.StatusUnauthorized, gin.H{
@@ -54,11 +51,32 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		//save user id and role to context
-		c.Set("user_id", claims["user_id"])
-		c.Set("role", claims["role"])
+		userID, ok := claims["user_id"].(float64)
+		if !ok || userID <= 0 {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid user claim"})
+			return
+		}
 
-		//next to controller
+		role, ok := claims["role"].(string)
+		if !ok || role == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid role claim"})
+			return
+		}
+
+		c.Set("user_id", uint(userID))
+		c.Set("role", role)
+
+		c.Next()
+	}
+}
+
+func RequireRole(role string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userRole, ok := c.Get("role")
+		if !ok || userRole != role {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Forbidden"})
+			return
+		}
 		c.Next()
 	}
 }

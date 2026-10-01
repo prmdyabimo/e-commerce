@@ -9,6 +9,7 @@ import (
 	"mini-ecommerce/middlewares"
 	"mini-ecommerce/models"
 	"mini-ecommerce/routes"
+	"mini-ecommerce/utils"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -16,79 +17,46 @@ import (
 )
 
 func main() {
-
-	log.Println("DEBUG: program started")
-
-	err := godotenv.Load()
-	if err != nil {
-		log.Println("DEBUG: .env not found")
-	} else {
-		log.Println("DEBUG: .env success to load")
+	if err := godotenv.Load(); err != nil {
+		log.Printf("No .env file loaded: %v", err)
 	}
 
-	apiKey := os.Getenv("API_KEY")
-	log.Println("DEBUG: API_KEY =", apiKey)
-
-	if apiKey == "" {
-		log.Fatal("API_KEY not found in env")
+	if err := utils.ValidateJWTSecret(); err != nil {
+		log.Fatal(err)
 	}
 
-	// =====================
-	// INIT GIN
-	// =====================
 	r := gin.Default()
 
-	// static file (upload image)
 	r.StaticFS("/uploads", gin.Dir("uploads", false))
 
-	// enable CORS
 	r.Use(cors.New(cors.Config{
-	AllowOrigins: []string{
-		"http://localhost:3000",
-	},
-	AllowMethods: []string{
-		"GET",
-		"POST",
-		"PUT",
-		"DELETE",
-		"OPTIONS",
-	},
-	AllowHeaders: []string{
-		"Origin",
-		"Content-Type",
-		"Authorization",
-		"x-api-key",
-	},
-	ExposeHeaders: []string{
-		"Content-Length",
-	},
-	AllowCredentials: true,
-	MaxAge: 12 * time.Hour,
-}))
+		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "X-API-Key"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
 
-	// =====================
-	// INIT DATABASE
-	// =====================
-	db := config.InitDB()
+	db, err := config.InitDB()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	db.AutoMigrate(
+	if err := db.AutoMigrate(
 		&models.User{},
 		&models.Category{},
 		&models.Product{},
 		&models.Order{},
 		&models.OrderItem{},
-	)
+	); err != nil {
+		log.Fatalf("migrate database: %v", err)
+	}
 
-	// =====================
-	// PUBLIC ROUTES
-	// =====================
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "OK"})
 	})
 
-	// =====================
-	// PROTECTED ROUTES (API KEY)
-	// =====================
 	api := r.Group("/api")
 	api.Use(middlewares.APIKeyMiddleware())
 	{
@@ -99,14 +67,14 @@ func main() {
 		})
 	}
 
-	// =====================
-	// MAIN ROUTES
-	// =====================
 	routes.SetupRoutes(r, db)
 
-	// =====================
-	// RUN SERVER
-	// =====================
-	log.Println("Server running on :8080")
-	r.Run(":8080")
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	log.Printf("Server running on :%s", port)
+	if err := r.Run(":" + port); err != nil {
+		log.Fatalf("start server: %v", err)
+	}
 }

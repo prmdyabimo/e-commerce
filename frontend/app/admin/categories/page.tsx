@@ -76,8 +76,8 @@ export default function CategoriesPage() {
     if (!trimmed) {
       await Swal.fire({
         icon: "warning",
-        title: "Category name is required",
-        text: "Please enter a category name.",
+        title: "Nama kategori wajib diisi",
+        text: "Masukkan nama kategori terlebih dahulu.",
       });
       return;
     }
@@ -88,8 +88,8 @@ export default function CategoriesPage() {
         await updateCategory(editing.id, { name: trimmed });
         await Swal.fire({
           icon: "success",
-          title: "Success",
-          text: "Category updated successfully.",
+          title: "Berhasil",
+          text: "Kategori berhasil diperbarui.",
           timer: 1600,
           showConfirmButton: false,
         });
@@ -97,8 +97,8 @@ export default function CategoriesPage() {
         await createCategory({ name: trimmed });
         await Swal.fire({
           icon: "success",
-          title: "Success",
-          text: "Category created successfully.",
+          title: "Berhasil",
+          text: "Kategori berhasil ditambahkan.",
           timer: 1600,
           showConfirmButton: false,
         });
@@ -110,7 +110,7 @@ export default function CategoriesPage() {
       const message = err instanceof Error ? err.message : String(err);
       await Swal.fire({
         icon: "error",
-        title: "Failed to save category",
+        title: "Kategori gagal disimpan",
         text: message,
       });
     } finally {
@@ -120,12 +120,12 @@ export default function CategoriesPage() {
 
   async function onDelete(id: number) {
     const confirmResult = await Swal.fire({
-      title: "Delete category?",
-      text: "This category will be permanently deleted.",
+      title: "Hapus kategori?",
+      text: "Kategori ini akan dihapus secara permanen.",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonText: "Delete",
-      cancelButtonText: "Cancel",
+      confirmButtonText: "Hapus",
+      cancelButtonText: "Batal",
     });
     if (!confirmResult.isConfirmed) return;
     try {
@@ -134,8 +134,8 @@ export default function CategoriesPage() {
       await load();
       await Swal.fire({
         icon: "success",
-        title: "Success",
-        text: "Category deleted successfully.",
+        title: "Berhasil",
+        text: "Kategori berhasil dihapus.",
         timer: 1600,
         showConfirmButton: false,
       });
@@ -143,7 +143,7 @@ export default function CategoriesPage() {
       const message = err instanceof Error ? err.message : String(err);
       await Swal.fire({
         icon: "error",
-        title: "Failed to delete category",
+        title: "Kategori gagal dihapus",
         text: message,
       });
     } finally {
@@ -155,10 +155,10 @@ export default function CategoriesPage() {
     <div className="space-y-6 font-[var(--font-geist-sans)]">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm text-slate-500 dark:text-slate-400">Manage product categories.</p>
-          <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Categories</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Atur kategori untuk menjaga katalog tetap rapi.</p>
+          <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Kategori</h1>
         </div>
-        <div className="text-xs text-slate-400 dark:text-slate-500">Dashboard / Categories</div>
+        <div className="text-xs text-slate-400 dark:text-slate-500">Dashboard / Kategori</div>
       </div>
 
       <div className="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -172,35 +172,35 @@ export default function CategoriesPage() {
             </span>
             <input
               className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm text-slate-700 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500"
-              placeholder="Search categories..."
+              placeholder="Cari kategori..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
           <button
-            className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm"
+            className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
             onClick={() => setEditing({ name: "" })}
           >
-            + Add Category
+            + Tambah kategori
           </button>
         </div>
       </div>
 
       <div className="rounded-2xl border border-slate-200/70 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
         {loading ? (
-          <div className="p-6 text-sm text-slate-500 dark:text-slate-400">Loading categories...</div>
+          <div className="p-6 text-sm text-slate-500 dark:text-slate-400">Memuat kategori...</div>
         ) : filtered.length === 0 ? (
           <div className="p-6 text-sm text-slate-500 dark:text-slate-400">
-            No categories yet. Add your first category.
+            Belum ada kategori. Tambahkan kategori pertama Anda.
           </div>
         ) : (
           <div className="overflow-x-auto rounded-tl-2xl rounded-tr-2xl">
             <table className="min-w-full text-sm">
               <thead className="bg-slate-50 text-left text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                 <tr>
-                  <th className="px-4 py-3 font-medium">Category Name</th>
-                  <th className="px-4 py-3 font-medium">Product Count</th>
-                  <th className="px-4 py-3 font-medium text-right">Actions</th>
+                  <th className="px-4 py-3 font-medium">Nama kategori</th>
+                  <th className="px-4 py-3 font-medium">Jumlah produk</th>
+                  <th className="px-4 py-3 font-medium text-right">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -210,7 +210,7 @@ export default function CategoriesPage() {
                       {item.name || "-"}
                     </td>
                     <td className="px-4 py-4 text-slate-600 dark:text-slate-300">
-                      {item.count} products
+                      {item.count} produk
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center justify-end gap-2">
@@ -218,7 +218,7 @@ export default function CategoriesPage() {
                           className="rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600 hover:text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:text-slate-100"
                           onClick={() => setEditing({ id: item.id, name: item.name })}
                         >
-                          Edit
+                          Ubah
                         </button>
                         <button
                           className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-600 hover:text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-400"
@@ -227,7 +227,7 @@ export default function CategoriesPage() {
                           }}
                           disabled={deletingId === item.id}
                         >
-                          {deletingId === item.id ? "Deleting..." : "Delete"}
+                          {deletingId === item.id ? "Menghapus..." : "Hapus"}
                         </button>
                       </div>
                     </td>
@@ -252,10 +252,10 @@ export default function CategoriesPage() {
               <div className="mb-4 flex items-start justify-between gap-4">
                 <div>
                   <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                    {editing.id ? "Edit Category" : "Add Category"}
+                    {editing.id ? "Ubah kategori" : "Tambah kategori"}
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Enter the category name according to your products.
+                    Masukkan nama kategori yang sesuai dengan produk Anda.
                   </p>
                 </div>
                 <button
@@ -270,28 +270,28 @@ export default function CategoriesPage() {
               <div className="space-y-3">
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">
-                    Category Name
+                    Nama kategori
                   </label>
                   <input
-                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500"
+                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500"
                     value={nameInput}
                     onChange={(e) => setNameInput(e.target.value)}
-                    placeholder="Example: Electronics"
+                    placeholder="Contoh: Elektronik"
                   />
                 </div>
                 <div className="flex flex-col gap-3 sm:flex-row">
                   <button
-                    className="w-full rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
+                    className="w-full rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
                     onClick={onSave}
                     disabled={saving}
                   >
-                    {saving ? "Saving..." : "Save"}
+                    {saving ? "Menyimpan..." : "Simpan"}
                   </button>
                   <button
                     className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
                     onClick={() => setEditing(null)}
                   >
-                    Cancel
+                    Batal
                   </button>
                 </div>
               </div>

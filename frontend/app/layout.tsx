@@ -1,22 +1,11 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "./providers";
 import "./globals.css";
 import "sweetalert2/dist/sweetalert2.min.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
-  title: "E-Commerce Admin",
-  description: "Admin panel for e-commerce application",
+  title: "GizmoHub | Gadget & Aksesori Pilihan",
+  description: "Temukan gadget dan aksesori pilihan di GizmoHub.",
 };
 
 export default function RootLayout({
@@ -25,10 +14,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+    <html lang="id" suppressHydrationWarning>
+      <body className="antialiased">
         <ThemeProvider>
           {children}
         </ThemeProvider>

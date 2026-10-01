@@ -1,5 +1,7 @@
-# uploads folder
-uploads/
-
-# Environment variables file
+# Abaikan file environment & rahasia
 .env
+.env.local
+.env.*.local
+
+# Abaikan file upload / gambar lokal
+uploads/

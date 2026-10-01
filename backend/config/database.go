@@ -1,21 +1,23 @@
 package config
 
 import (
-	"log"
+	"fmt"
+	"os"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
-//initdb creates and restores database connections
-func InitDB() *gorm.DB {
-	
-	dsn := "root:@tcp(127.0.0.1:3306)/mini_ecommerce?charset=utf8mb4&parseTime=True&loc=Local"
+func InitDB() (*gorm.DB, error) {
+	dsn := os.Getenv("MYSQL_DSN")
+	if dsn == "" {
+		return nil, fmt.Errorf("MYSQL_DSN is required")
+	}
 
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
-		log.Fatal("Failed to Connect databse", err)
+		return nil, fmt.Errorf("connect to database: %w", err)
 	}
-	
-	return db
+
+	return db, nil
 }

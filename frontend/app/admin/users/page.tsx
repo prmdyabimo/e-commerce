@@ -70,8 +70,16 @@ export default function UsersPage() {
     if (!name || !email || !password) {
       await Swal.fire({
         icon: "warning",
-        title: "Incomplete form",
-        text: "Name, email, and password are required.",
+        title: "Form belum lengkap",
+        text: "Nama, email, dan kata sandi wajib diisi.",
+      });
+      return;
+    }
+    if (password.length < 8) {
+      await Swal.fire({
+        icon: "warning",
+        title: "Kata sandi terlalu pendek",
+        text: "Gunakan minimal 8 karakter.",
       });
       return;
     }
@@ -92,8 +100,8 @@ export default function UsersPage() {
       setCreateRole("user");
       await Swal.fire({
         icon: "success",
-        title: "Success",
-        text: "User created successfully.",
+        title: "Berhasil",
+        text: "Pengguna berhasil dibuat.",
         timer: 1600,
         showConfirmButton: false,
       });
@@ -101,7 +109,7 @@ export default function UsersPage() {
       const message = err instanceof Error ? err.message : String(err);
       await Swal.fire({
         icon: "error",
-        title: "Failed to create user",
+        title: "Pengguna gagal dibuat",
         text: message,
       });
     } finally {
@@ -118,8 +126,8 @@ export default function UsersPage() {
       if (!Number.isFinite(nid) || nid <= 0) {
         await Swal.fire({
           icon: "error",
-          title: "Update failed",
-          text: "Invalid user ID.",
+          title: "Pembaruan gagal",
+          text: "ID pengguna tidak valid.",
         });
         return;
       }
@@ -128,8 +136,8 @@ export default function UsersPage() {
       setEditing(null);
       await Swal.fire({
         icon: "success",
-        title: "Success",
-        text: "User updated successfully.",
+        title: "Berhasil",
+        text: "Data pengguna berhasil diperbarui.",
         timer: 1600,
         showConfirmButton: false,
       });
@@ -137,7 +145,7 @@ export default function UsersPage() {
       const message = err instanceof Error ? err.message : String(err);
       await Swal.fire({
         icon: "error",
-        title: "Failed to update user",
+        title: "Data pengguna gagal diperbarui",
         text: message,
       });
     }
@@ -148,32 +156,32 @@ export default function UsersPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Welcome back, {userName}
+            Selamat datang, {userName}
           </p>
-          <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Users</h1>
+          <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Pengguna</h1>
         </div>
-        <div className="text-xs text-slate-400 dark:text-slate-500">Dashboard / Users</div>
+        <div className="text-xs text-slate-400 dark:text-slate-500">Dashboard / Pengguna</div>
       </div>
 
       <div className="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-              User List
+              Daftar pengguna
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Manage registered user profiles.
+              Kelola akun pelanggan dan administrator.
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <div className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-300">
-              {users.length} users
+            <div className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
+              {users.length} pengguna
             </div>
             <button
-              className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm"
+              className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
               onClick={() => setCreating(true)}
             >
-              + Add User
+              + Tambah pengguna
             </button>
           </div>
         </div>
@@ -190,7 +198,7 @@ export default function UsersPage() {
             </span>
             <input
               className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm text-slate-700 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500"
-              placeholder="Search users..."
+              placeholder="Cari pengguna..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -199,28 +207,28 @@ export default function UsersPage() {
             className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
             onClick={() => setSearch("")}
           >
-            Reset
+            Atur ulang
           </button>
         </div>
       </div>
 
       <div className="rounded-2xl border border-slate-200/70 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
         {loading ? (
-          <div className="p-6 text-sm text-slate-500 dark:text-slate-400">Loading users...</div>
+          <div className="p-6 text-sm text-slate-500 dark:text-slate-400">Memuat pengguna...</div>
         ) : filteredUsers.length === 0 ? (
           <div className="p-6 text-sm text-slate-500 dark:text-slate-400">
-            No users found.
+            Pengguna tidak ditemukan.
           </div>
         ) : (
           <div className="overflow-x-auto rounded-tl-2xl rounded-tr-2xl">
             <table className="min-w-full text-sm">
               <thead className="bg-slate-50 text-left text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                 <tr>
-                  <th className="px-4 py-3 font-medium">User</th>
+                  <th className="px-4 py-3 font-medium">Pengguna</th>
                   <th className="px-4 py-3 font-medium">Email</th>
                   <th className="px-4 py-3 font-medium">ID</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
-                  <th className="px-4 py-3 font-medium text-right">Actions</th>
+                  <th className="px-4 py-3 font-medium">Peran</th>
+                  <th className="px-4 py-3 font-medium text-right">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -235,7 +243,7 @@ export default function UsersPage() {
                     >
                       <td className="px-4 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 text-sm font-semibold text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-sm font-semibold text-blue-700 dark:bg-blue-950/50 dark:text-blue-300">
                             {initials}
                           </div>
                           <div>
@@ -243,7 +251,7 @@ export default function UsersPage() {
                               {displayName}
                             </div>
                             <div className="text-xs text-slate-500 dark:text-slate-400">
-                              Registered account
+                              Akun terdaftar
                             </div>
                           </div>
                         </div>
@@ -256,7 +264,7 @@ export default function UsersPage() {
                       </td>
                       <td className="px-4 py-4">
                         <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
-                          {u.role || "user"}
+                          {u.role === "admin" ? "Admin" : "Pelanggan"}
                         </span>
                       </td>
                       <td className="px-4 py-4">
@@ -265,7 +273,7 @@ export default function UsersPage() {
                             className="rounded-lg border border-slate-200 bg-white p-2 text-slate-500 hover:text-slate-700 disabled:cursor-not-allowed disabled:border-slate-100 disabled:bg-slate-50 disabled:text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200 dark:disabled:border-slate-800 dark:disabled:bg-slate-900 dark:disabled:text-slate-600"
                             onClick={() => setEditing(u)}
                             disabled={!Number.isFinite(u.id)}
-                            title="Edit user"
+                            title="Ubah pengguna"
                           >
                             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
                               <path d="M12 20h9" />
@@ -285,7 +293,7 @@ export default function UsersPage() {
         {!loading && filteredUsers.length > 0 && (
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-4 py-3 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
             <div>
-              Showing 1 - {filteredUsers.length} of {users.length} users
+              Menampilkan 1–{filteredUsers.length} dari {users.length} pengguna
             </div>
             <div className="flex items-center gap-2">
               <button className="rounded-md border border-slate-200 px-2 py-1 text-slate-500 dark:border-slate-700 dark:text-slate-300">
@@ -315,10 +323,10 @@ export default function UsersPage() {
               <div className="mb-4 flex items-start justify-between gap-4">
                 <div>
                   <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                    Edit User
+                    Ubah pengguna
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Update the user profile information below.
+                    Perbarui informasi akun pengguna berikut.
                   </p>
                 </div>
                 <button
@@ -353,10 +361,10 @@ export default function UsersPage() {
               <div className="mb-4 flex items-start justify-between gap-4">
                 <div>
                   <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                    Add User
+                    Tambah pengguna
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Create a new user or admin account.
+                    Buat akun pelanggan atau administrator.
                   </p>
                 </div>
                 <button
@@ -371,18 +379,18 @@ export default function UsersPage() {
 
               <div className="space-y-3">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Name</label>
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Nama</label>
                   <input
-                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                     value={createName}
                     onChange={(e) => setCreateName(e.target.value)}
-                    placeholder="User full name"
+                    placeholder="Nama lengkap"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Email</label>
                   <input
-                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                     type="email"
                     value={createEmail}
                     onChange={(e) => setCreateEmail(e.target.value)}
@@ -390,39 +398,40 @@ export default function UsersPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Password</label>
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Kata sandi</label>
                   <input
-                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                     type="password"
+                    minLength={8}
                     value={createPassword}
                     onChange={(e) => setCreatePassword(e.target.value)}
-                    placeholder="Initial password"
+                    placeholder="Minimal 8 karakter"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Role</label>
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Peran</label>
                   <select
-                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                     value={createRole}
                     onChange={(e) => setCreateRole(e.target.value as "user" | "admin")}
                   >
-                    <option value="user">User</option>
+                    <option value="user">Pelanggan</option>
                     <option value="admin">Admin</option>
                   </select>
                 </div>
                 <div className="flex flex-col gap-3 sm:flex-row">
                   <button
-                    className="w-full rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-60"
+                    className="w-full rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-60"
                     onClick={onCreateUser}
                     disabled={saving}
                   >
-                    {saving ? "Saving..." : "Create"}
+                    {saving ? "Menyimpan..." : "Buat akun"}
                   </button>
                   <button
                     className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
                     onClick={() => setCreating(false)}
                   >
-                    Cancel
+                    Batal
                   </button>
                 </div>
               </div>

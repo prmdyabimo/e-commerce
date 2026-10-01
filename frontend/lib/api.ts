@@ -61,7 +61,7 @@ export type OrderInputItem = {
 // API ROOT
 // ===============================
 
-const API_ROOT = "http://localhost:8080";
+const API_ROOT = "/api";
 
 // ===============================
 // AUTH HEADERS
@@ -79,8 +79,6 @@ function getAuthHeaders(includeContentType = true) {
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
   }
-
-  headers["x-api-key"] = "my-secret-api-key-123";
 
   return headers;
 }
@@ -140,6 +138,7 @@ export async function createProduct(payload: {
 
   const uploadRes = await fetch(`${API_ROOT}/upload`, {
     method: "POST",
+    headers: getAuthHeaders(false),
     body: imageFormData,
   });
 
@@ -418,7 +417,7 @@ export async function register(payload: {
   email: string;
   password: string;
 }) {
-  const res = await fetch(`${API_ROOT}/register`, {
+  const res = await fetch(`${API_ROOT}/auth/register`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -436,7 +435,7 @@ export async function register(payload: {
 }
 
 export async function login(payload: { email: string; password: string }) {
-  const res = await fetch(`${API_ROOT}/login`, {
+  const res = await fetch(`${API_ROOT}/auth/login`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

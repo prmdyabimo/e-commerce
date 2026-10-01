@@ -1,7 +1,9 @@
 package controllers
 
 import (
+	"errors"
 	"net/http"
+	"strings"
 
 	"mini-ecommerce/models"
 
@@ -9,98 +11,106 @@ import (
 	"gorm.io/gorm"
 )
 
-// struct controller so that db can be used in all methods
 type CategoryController struct {
 	DB *gorm.DB
 }
 
-// constructor controller
 func NewCategoryController(db *gorm.DB) *CategoryController {
 	return &CategoryController{DB: db}
 }
 
-// Create category
+type categoryRequest struct {
+	Name string `json:"name" binding:"required"`
+}
+
 func (cc *CategoryController) Create(c *gin.Context) {
-	var category models.Category
-
-	//take json from request body and map it to struct
-	if err := c.ShouldBindJSON(&category); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
-		})
+	var input categoryRequest
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	name := strings.TrimSpace(input.Name)
+	if name == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Category name is required"})
 		return
 	}
 
-	//keep in database
+	category := models.Category{Name: name}
 	if err := cc.DB.Create(&category).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
+		c.JSON(http.StatusConflict, gin.H{"error": "Failed to create category; name may already exist"})
 		return
 	}
-
-	//response succes
 	c.JSON(http.StatusCreated, category)
 }
 
-// read all categgories
 func (cc *CategoryController) FindAll(c *gin.Context) {
 	var categories []models.Category
-
-	//preload("products") = get category + products in it
-	cc.DB.Preload("Products").Find(&categories)
-
+	if err := cc.DB.Preload("Products").Find(&categories).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch categories"})
+		return
+	}
 	c.JSON(http.StatusOK, categories)
 }
 
-// read category by id
 func (cc *CategoryController) FindByID(c *gin.Context) {
 	var category models.Category
-	id := c.Param("id")
-
-	//search by id + preload products
-	if err := cc.DB.Preload("Products").First(&category, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": "Category Not Found",
-		})
+	if err := cc.DB.Preload("Products").First(&category, c.Param("id")).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Category not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch category"})
 		return
 	}
 	c.JSON(http.StatusOK, category)
 }
 
-// update category
 func (cc *CategoryController) Update(c *gin.Context) {
+	var input categoryRequest
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	name := strings.TrimSpace(input.Name)
+	if name == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Category name is required"})
+		return
+	}
+
+	result := cc.DB.Model(&models.Category{}).Where("id = ?", c.Param("id")).Update("name", name)
+	if result.Error != nil {
+		c.JSON(http.StatusConflict, gin.H{"error": "Failed to update category; name may already exist"})
+		return
+	}
+	if result.RowsAffected == 0 {
+		var existing models.Category
+		if err := cc.DB.First(&existing, c.Param("id")).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				c.JSON(http.StatusNotFound, gin.H{"error": "Category not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch category"})
+			return
+		}
+	}
+
 	var category models.Category
-	id := c.Param("id")
-
-	//check if the data exists
-	if err := cc.DB.First(&category, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": "Category Not Found",
-		})
+	if err := cc.DB.First(&category, c.Param("id")).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch updated category"})
 		return
 	}
-	//take data from request
-	if err := c.ShouldBindJSON(&category); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
-		})
-		return
-	}
-
-	//save changes
-	cc.DB.Save(&category)
-
 	c.JSON(http.StatusOK, category)
 }
 
 func (cc *CategoryController) Delete(c *gin.Context) {
-	id := c.Param("id")
-
-	//delete by id
-	cc.DB.Delete(&models.Category{}, id)
-
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Category Deleted",
-	})
+	result := cc.DB.Delete(&models.Category{}, c.Param("id"))
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete category"})
+		return
+	}
+	if result.RowsAffected == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Category not found"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Category deleted"})
 }

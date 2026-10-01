@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { usePathname } from "next/navigation";
 import AdminSidebar from "../../components/AdminSidebar";
+import { getTokenRole } from "../../lib/auth";
 
 type Theme = "light" | "dark";
 
@@ -37,10 +39,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   useEffect(() => {
     const timer = window.setTimeout(() => {
       const token = localStorage.getItem("token");
-      if (!token) {
+      if (!token || getTokenRole(token) !== "admin") {
         setAuthorized(false);
         setChecking(false);
-        router.replace("/login");
+        router.replace(token ? "/shop" : "/login");
         return;
       }
       const email = localStorage.getItem("user_email") || "";
@@ -55,13 +57,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   useEffect(() => {
     const titles: Record<string, string> = {
       "/admin": "Dashboard",
-      "/admin/products": "Products",
-      "/admin/categories": "Categories",
-      "/admin/orders": "Orders",
-      "/admin/users": "Users",
+      "/admin/products": "Produk",
+      "/admin/categories": "Kategori",
+      "/admin/orders": "Pesanan",
+      "/admin/users": "Pengguna",
     };
     const currentTitle = titles[pathname] || "Admin";
-    document.title = `E-Commerce - ${currentTitle}`;
+    document.title = `GizmoHub Admin - ${currentTitle}`;
   }, [pathname]);
 
   if (checking || !authorized) {
@@ -70,10 +72,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const displayName = userEmail ? userEmail.split("@")[0] : "Admin";
   const initials = displayName ? displayName.slice(0, 1).toUpperCase() : "A";
+  const pageTitle: Record<string, string> = {
+    "/admin": "Dashboard",
+    "/admin/products": "Produk",
+    "/admin/categories": "Kategori",
+    "/admin/orders": "Pesanan",
+    "/admin/users": "Pengguna",
+  };
+  const currentTitle = pageTitle[pathname] || "Dashboard";
 
   return (
-    <div data-theme={theme} className={`min-h-screen ${theme === "dark" ? "bg-slate-950" : "bg-[#f5f7fb]"}`}>
-      <div className="px-3 py-3 sm:px-4 sm:py-4">
+    <div data-theme={theme} className={`min-h-screen ${theme === "dark" ? "bg-[#080f1e]" : "bg-[#f3f6fb]"}`}>
+      <div className="px-3 py-3 sm:px-4 sm:py-4 lg:px-5">
         <div className="relative">
           <AdminSidebar
             open={open}
@@ -88,9 +98,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 ? "border-slate-700 bg-slate-900 text-white" 
                 : "border-slate-100 bg-white"
             }`}>
-              <div className="flex items-center gap-3">
+              <div className="flex min-w-0 items-center gap-3">
                 <button
-                  className={`lg:hidden rounded-xl border p-2 transition ${
+                  aria-label="Buka navigasi"
+                  className={`rounded-xl border p-2 transition lg:hidden ${
                     theme === "dark"
                       ? "border-slate-700 bg-slate-800 text-slate-400 hover:text-slate-200"
                       : "border-slate-200 bg-white text-slate-600"
@@ -101,39 +112,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     <path d="M4 6h16M4 12h16M4 18h10" />
                   </svg>
                 </button>
-                <div className={`hidden sm:block text-sm ${
-                  theme === "dark" ? "text-slate-400" : "text-slate-500"
-                }`}>
-                  Good work, {displayName}
-                </div>
-              </div>
-
-              <div className="order-3 w-full sm:order-none sm:min-w-[220px] sm:flex-1 sm:max-w-xl">
-                <div className="relative">
-                  <span className={`pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 ${
-                    theme === "dark" ? "text-slate-600" : "text-slate-400"
-                  }`}>
-                    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-                      <circle cx="11" cy="11" r="7" />
-                      <path d="M20 20l-4-4" />
-                    </svg>
-                  </span>
-                  <input
-                    type="text"
-                    placeholder="Search products, categories, or more..."
-                    className={`w-full rounded-xl border py-2 pl-9 pr-14 text-sm outline-none focus:border-indigo-200 transition ${
-                      theme === "dark"
-                        ? "border-slate-700 bg-slate-800 text-white placeholder-slate-500 focus:bg-slate-700"
-                        : "border-slate-200 bg-slate-50 text-slate-700 placeholder-slate-500 focus:bg-white"
-                    }`}
-                  />
-                  <span className={`absolute right-3 top-1/2 -translate-y-1/2 rounded-md border px-2 py-0.5 text-[10px] ${
-                    theme === "dark"
-                      ? "border-slate-700 text-slate-500"
-                      : "border-slate-200 text-slate-400"
-                  }`}>
-                    Ctrl K
-                  </span>
+                <div className="min-w-0">
+                  <p className={`truncate text-[11px] font-medium ${theme === "dark" ? "text-slate-400" : "text-slate-500"}`}>GizmoHub Control Panel</p>
+                  <h1 className={`truncate text-lg font-bold tracking-tight ${theme === "dark" ? "text-white" : "text-slate-900"}`}>{currentTitle}</h1>
                 </div>
               </div>
 
@@ -145,7 +126,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       ? "border-slate-700 bg-slate-800 text-amber-400 hover:bg-slate-700"
                       : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                   }`}
-                  title="Toggle dark/light mode"
+                  title="Ganti tema"
+                  aria-label="Ganti tema"
                 >
                   {theme === "dark" ? (
                     <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
@@ -158,36 +140,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     </svg>
                   )}
                 </button>
-                <button className={`rounded-xl border p-2 transition ${
+                <Link href="/shop" className={`hidden rounded-xl border px-3 py-2 text-xs font-semibold transition sm:block ${
                   theme === "dark"
-                    ? "border-slate-700 bg-slate-800 text-slate-400 hover:text-slate-300"
-                    : "border-slate-200 bg-white text-slate-500 hover:text-slate-700"
+                    ? "border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700"
+                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                 }`}>
-                  <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M12 4v4" />
-                    <path d="M12 16v4" />
-                    <path d="M4 12h4" />
-                    <path d="M16 12h4" />
-                    <circle cx="12" cy="12" r="3" />
-                  </svg>
-                </button>
-                <button className={`relative rounded-xl border p-2 transition ${
-                  theme === "dark"
-                    ? "border-slate-700 bg-slate-800 text-slate-400 hover:text-slate-300"
-                    : "border-slate-200 bg-white text-slate-500 hover:text-slate-700"
-                }`}>
-                  <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M18 8a6 6 0 1 0-12 0c0 7-3 7-3 7h18s-3 0-3-7" />
-                    <path d="M13.7 21a2 2 0 0 1-3.4 0" />
-                  </svg>
-                  <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-indigo-500" />
-                </button>
+                  Lihat toko
+                </Link>
                 <div className={`flex items-center gap-2 rounded-xl border px-2 py-1.5 ${
                   theme === "dark"
                     ? "border-slate-700 bg-slate-800"
                     : "border-slate-200 bg-white"
                 }`}>
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-xs font-semibold text-white">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-xs font-semibold text-white">
                     {initials}
                   </div>
                   <div className="hidden sm:block">
@@ -195,7 +160,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       {displayName}
                     </div>
                     <div className={`text-[10px] ${theme === "dark" ? "text-slate-400" : "text-slate-500"}`}>
-                      Admin
+                      Administrator
                     </div>
                   </div>
                 </div>

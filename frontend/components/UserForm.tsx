@@ -37,9 +37,9 @@ export default function UserForm({ initial, onUpdate, onCancel }: Props) {
   return (
     <form onSubmit={submit} className="space-y-4">
       <div>
-        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Name</label>
+        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Nama</label>
         <input
-          className="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500"
+          className="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500"
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
@@ -48,7 +48,7 @@ export default function UserForm({ initial, onUpdate, onCancel }: Props) {
       <div>
         <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Email</label>
         <input
-          className="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500"
+          className="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -57,18 +57,18 @@ export default function UserForm({ initial, onUpdate, onCancel }: Props) {
       </div>
       <div className="flex gap-2 pt-2">
         <button
-          className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm disabled:opacity-60"
+          className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-60"
           type="submit"
           disabled={loading}
         >
-          {loading ? "Saving..." : "Save"}
+          {loading ? "Menyimpan..." : "Simpan"}
         </button>
         <button
           type="button"
           className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
           onClick={() => onCancel && onCancel()}
         >
-          Cancel
+          Batal
         </button>
       </div>
     </form>
