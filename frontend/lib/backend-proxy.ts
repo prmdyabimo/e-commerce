@@ -41,7 +41,10 @@ export async function proxyBackendRequest(
   } catch (error) {
     console.error(`Backend proxy failed for ${backendPath}:`, error);
     return NextResponse.json(
-      { error: "Backend service is unavailable" },
+      {
+        error:
+          "Backend tidak terhubung. Jalankan server Go dan pastikan API_URL mengarah ke backend yang aktif.",
+      },
       { status: 502 },
     );
   }

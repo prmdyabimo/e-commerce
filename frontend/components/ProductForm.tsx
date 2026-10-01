@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 
 type ProductFormProps = {
   initial?: {
@@ -227,7 +228,7 @@ export default function ProductForm({
             className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Contoh: Ponsel Gizmo X"
+            placeholder="Contoh: Ponsel Native X"
           />
 
           {errors.name && (
@@ -325,9 +326,12 @@ export default function ProductForm({
 
           <label className="mt-2 block cursor-pointer rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 p-4 text-center dark:border-slate-700 dark:bg-slate-800/60">
             <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm dark:bg-slate-900">
-              <img
+              <Image
                 src={imagePreview}
                 alt="Pratinjau produk"
+                width={40}
+                height={40}
+                unoptimized
                 className="h-10 w-10 rounded-xl object-cover"
               />
             </div>

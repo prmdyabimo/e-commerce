@@ -3,10 +3,10 @@
 import React, { useState } from "react";
 
 type Props = {
-  initial?: { id?: number; name?: string; email?: string };
+  initial?: { id?: number; name?: string; email?: string; role?: "user" | "admin" };
   onUpdate: (
     id: string | number,
-    payload: { name?: string; email?: string }
+    payload: { name?: string; email?: string; role?: "user" | "admin" }
   ) => Promise<void>;
   onCancel?: () => void;
 };
@@ -14,11 +14,13 @@ type Props = {
 export default function UserForm({ initial, onUpdate, onCancel }: Props) {
   const [name, setName] = useState(initial?.name || "");
   const [email, setEmail] = useState(initial?.email || "");
+  const [role, setRole] = useState<"user" | "admin">(initial?.role || "user");
   const [loading, setLoading] = useState(false);
 
   React.useEffect(() => {
     setName(initial?.name || "");
     setEmail(initial?.email || "");
+    setRole(initial?.role || "user");
   }, [initial]);
 
   async function submit(e: React.FormEvent) {
@@ -28,7 +30,7 @@ export default function UserForm({ initial, onUpdate, onCancel }: Props) {
     if (!Number.isFinite(id) || id <= 0) return;
     setLoading(true);
     try {
-      await onUpdate(id, { name: name.trim(), email: email.trim() });
+      await onUpdate(id, { name: name.trim(), email: email.trim(), role });
     } finally {
       setLoading(false);
     }
@@ -54,6 +56,17 @@ export default function UserForm({ initial, onUpdate, onCancel }: Props) {
           onChange={(e) => setEmail(e.target.value)}
           required
         />
+      </div>
+      <div>
+        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Peran</label>
+        <select
+          className="mt-2 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+          value={role}
+          onChange={(e) => setRole(e.target.value as "user" | "admin")}
+        >
+          <option value="user">Pelanggan</option>
+          <option value="admin">Admin</option>
+        </select>
       </div>
       <div className="flex gap-2 pt-2">
         <button

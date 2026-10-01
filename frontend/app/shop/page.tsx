@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Swal from "sweetalert2";
 import {
   fetchCategories,
@@ -40,6 +40,18 @@ function formatNumber(value: number) {
   return numberFormatter.format(value);
 }
 
+function formatOrderStatus(status: string) {
+  const labels: Record<string, string> = {
+    pending: "Menunggu",
+    paid: "Dibayar",
+    processed: "Diproses",
+    shipped: "Dikirim",
+    completed: "Selesai",
+    cancelled: "Dibatalkan",
+  };
+  return labels[status.toLowerCase()] ?? status;
+}
+
 function resolveImageUrl(image?: string) {
   if (!image) return DEFAULT_IMAGE;
   if (/^https?:\/\//i.test(image)) return image;
@@ -72,10 +84,8 @@ function normalizeProduct(
 }
 
 export default function ShopPage() {
-  const [theme, setTheme] = useState<"light" | "dark">(() => {
-    if (typeof window === "undefined") return "light";
-    return (localStorage.getItem("shop-theme") as "light" | "dark" | null) || "light";
-  });
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [themeReady, setThemeReady] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [cart, setCart] = useState<CartState>({});
@@ -84,24 +94,21 @@ export default function ShopPage() {
   const [address, setAddress] = useState("");
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const [sortFilter, setSortFilter] = useState("newest");
-  const [tokenAvailable, setTokenAvailable] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return Boolean(localStorage.getItem("token"));
-  });
-  const [userRole, setUserRole] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null;
-    return localStorage.getItem("user_role");
-  });
-  const [customerName, setCustomerName] = useState(() => {
-    if (typeof window === "undefined") return "Guest";
-    const email = localStorage.getItem("user_email") || "";
-    return email ? email.split("@")[0] || "Guest" : "Guest";
-  });
+  const [sortFilter, setSortFilter] = useState("featured");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [tokenAvailable, setTokenAvailable] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [customerName, setCustomerName] = useState("Guest");
   const [lastOrder, setLastOrder] = useState<Order | null>(null);
   const [loadMessage, setLoadMessage] = useState<string | null>(null);
 
   useEffect(() => {
+    const savedTheme = localStorage.getItem("shop-theme");
+    if (savedTheme === "dark" || savedTheme === "light") {
+      setTheme(savedTheme);
+    }
+    setThemeReady(true);
+
     const token = localStorage.getItem("token");
     const email = localStorage.getItem("user_email") || "";
 
@@ -112,29 +119,41 @@ export default function ShopPage() {
     }
   }, []);
 
+  const loadCatalog = useCallback(async () => {
+    setLoading(true);
+    setLoadMessage(null);
+    const [productResult, categoryResult] = await Promise.allSettled([
+      fetchProducts(),
+      fetchCategories(),
+    ]);
+
+    if (productResult.status === "fulfilled") {
+      setProducts(productResult.value);
+    }
+    if (categoryResult.status === "fulfilled") {
+      setCategories(categoryResult.value);
+    }
+
+    const errorResult =
+      productResult.status === "rejected"
+        ? productResult
+        : categoryResult.status === "rejected"
+          ? categoryResult
+          : null;
+    if (errorResult) {
+      console.error("load shop catalog error", errorResult.reason);
+      setLoadMessage(
+        errorResult.reason instanceof Error
+          ? errorResult.reason.message
+          : "Katalog gagal dimuat.",
+      );
+    }
+    setLoading(false);
+  }, []);
+
   useEffect(() => {
-    (async () => {
-      try {
-        setLoading(true);
-        setLoadMessage(null);
-
-        const [productData, categoryData] = await Promise.all([
-          fetchProducts(),
-          fetchCategories(),
-        ]);
-
-        setProducts(productData || []);
-        setCategories(categoryData || []);
-      } catch (err) {
-        console.error("load shop products error", err);
-        setLoadMessage(
-          err instanceof Error ? err.message : "Failed to load products",
-        );
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [tokenAvailable]);
+    void loadCatalog();
+  }, [loadCatalog, tokenAvailable]);
 
   const categoryLookup = useMemo(
     () => new Map(categories.map((cat) => [cat.id, cat.name])),
@@ -203,12 +222,58 @@ export default function ShopPage() {
       sorted.sort((a, b) => b.price - a.price);
     } else if (sortFilter === "price-low") {
       sorted.sort((a, b) => a.price - b.price);
+    } else if (sortFilter === "newest") {
+      sorted.sort((a, b) => b.id - a.id);
     } else {
       sorted.sort((a, b) => b.id - a.id);
+      const categories = new Map<number, NormalizedProduct[]>();
+      for (const product of sorted) {
+        const group = categories.get(product.categoryId) ?? [];
+        group.push(product);
+        categories.set(product.categoryId, group);
+      }
+      const groups = Array.from(categories.values());
+      const featured: NormalizedProduct[] = [];
+      for (let index = 0; ; index += 1) {
+        let foundProduct = false;
+        for (const group of groups) {
+          if (group[index]) {
+            featured.push(group[index]);
+            foundProduct = true;
+          }
+        }
+        if (!foundProduct) break;
+      }
+      return featured;
     }
 
     return sorted;
   }, [normalizedProducts, search, categoryFilter, sortFilter]);
+
+  const pageSize = 12;
+  const pageCount = Math.max(1, Math.ceil(filteredProducts.length / pageSize));
+  const visibleProducts = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredProducts.slice(start, start + pageSize);
+  }, [filteredProducts, currentPage]);
+  const categoryShowcases = useMemo(
+    () =>
+      new Map(
+        categories.map((category) => [
+          category.id,
+          normalizedProducts.find((product) => product.categoryId === category.id),
+        ]),
+      ),
+    [categories, normalizedProducts],
+  );
+  const heroProducts = useMemo(
+    () =>
+      categories
+        .map((category) => categoryShowcases.get(category.id))
+        .filter((product): product is NormalizedProduct => Boolean(product))
+        .slice(0, 3),
+    [categories, categoryShowcases],
+  );
 
   const cartItems = useMemo(() => {
     return normalizedProducts
@@ -232,13 +297,13 @@ export default function ShopPage() {
   const isDark = theme === "dark";
   const pageClass = isDark
     ? "min-h-screen bg-[radial-gradient(circle_at_top,_rgba(15,23,42,0.92),_rgba(2,6,23,1)_48%)] px-4 py-8 text-slate-100 sm:px-6 lg:px-8"
-    : "min-h-screen bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.10),_transparent_36%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_100%)] px-4 py-8 text-slate-900 sm:px-6 lg:px-8";
+    : "min-h-screen bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.10),_transparent_36%),linear-gradient(180deg,_#f8fafc_0%,_#eff6ff_100%)] px-4 py-8 text-slate-900 sm:px-6 lg:px-8";
   const shellClass = isDark
     ? "border border-slate-800/90 bg-slate-900/90 shadow-[0_20px_60px_rgba(0,0,0,0.35)]"
     : "border border-white/70 bg-white/90 shadow-[0_20px_60px_rgba(15,23,42,0.08)]";
   const inputClass = isDark
-    ? "w-full rounded-xl border border-slate-700 bg-slate-800 py-2 pl-9 pr-3 text-sm text-slate-100 outline-none placeholder-slate-500 focus:border-indigo-400"
-    : "w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm text-slate-700 outline-none placeholder-slate-400 focus:border-indigo-200";
+    ? "w-full rounded-xl border border-slate-700 bg-slate-800 py-2 pl-9 pr-3 text-sm text-slate-100 outline-none placeholder-slate-500 focus:border-blue-400"
+    : "w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm text-slate-700 outline-none placeholder-slate-400 focus:border-blue-300";
   const cardClass = isDark
     ? "group overflow-hidden rounded-[1.5rem] border border-slate-800 bg-slate-900 shadow-[0_16px_40px_rgba(0,0,0,0.28)] transition hover:-translate-y-1 hover:shadow-[0_22px_50px_rgba(0,0,0,0.35)]"
     : "group overflow-hidden rounded-[1.5rem] border border-white/70 bg-white shadow-[0_16px_40px_rgba(15,23,42,0.08)] transition hover:-translate-y-1 hover:shadow-[0_22px_50px_rgba(15,23,42,0.12)]";
@@ -249,10 +314,10 @@ export default function ShopPage() {
   const baseTextClass = isDark ? "text-slate-100" : "text-slate-900";
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    if (themeReady) {
       localStorage.setItem("shop-theme", theme);
     }
-  }, [theme]);
+  }, [theme, themeReady]);
 
   function toggleTheme() {
     setTheme((current) => (current === "light" ? "dark" : "light"));
@@ -280,7 +345,7 @@ export default function ShopPage() {
     if (!tokenAvailable) {
       const result = await Swal.fire({
         icon: "warning",
-        title: "Login required",
+        title: "Silakan masuk terlebih dahulu",
         text: "Silakan login dulu untuk membuat order.",
         showCancelButton: true,
         confirmButtonText: "Login",
@@ -377,8 +442,6 @@ export default function ShopPage() {
     setLastOrder(null);
   }
 
-  const heroProduct = normalizedProducts[0];
-
   return (
     <div data-theme={theme} className={pageClass}>
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
@@ -390,7 +453,7 @@ export default function ShopPage() {
                 <path d="M9 9V6a3 3 0 0 1 6 0v3" />
               </svg>
             </span>
-            Gizmo<span className="text-blue-600">Hub</span>
+            native<span className="text-blue-600">.co</span>
           </Link>
           <div className="hidden items-center gap-6 text-sm font-medium md:flex">
             <a href="#home" className="text-blue-600">Beranda</a>
@@ -427,25 +490,38 @@ export default function ShopPage() {
           </div>
         </nav>
 
-        <section id="home" className="relative isolate overflow-hidden rounded-[1.75rem] bg-[#071126] px-6 py-10 text-white shadow-xl shadow-blue-950/15 sm:px-10 lg:min-h-[360px] lg:px-14 lg:py-12">
-          <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_70%_50%,rgba(37,99,235,0.36),transparent_42%),linear-gradient(110deg,#071126_5%,#0b1b39_60%,#071126)]" />
+        <section id="home" className="relative isolate overflow-hidden rounded-[2rem] bg-[#071126] px-6 py-10 text-white shadow-2xl shadow-blue-950/20 sm:px-10 lg:min-h-[430px] lg:px-14 lg:py-14">
+          <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_77%_45%,rgba(37,99,235,0.48),transparent_38%),radial-gradient(ellipse_at_35%_100%,rgba(14,165,233,0.14),transparent_40%),linear-gradient(110deg,#071126_5%,#0b1b39_60%,#071126)]" />
           <div className="grid items-center gap-8 lg:grid-cols-[0.9fr_1.1fr]">
             <div className="max-w-xl">
-              <p className="mb-4 text-xs font-bold uppercase tracking-[0.26em] text-blue-400">Teknologi untuk hidup lebih baik</p>
-              <h1 className="text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-5xl">Teknologi cerdas.<br /><span className="text-blue-400">Setiap hari lebih baik.</span></h1>
-              <p className="mt-5 max-w-md text-sm leading-6 text-slate-300 sm:text-base">Temukan gadget dan aksesori pilihan untuk bekerja, bermain, dan menikmati setiap momen.</p>
-              <a href="#products" className="mt-7 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-900/40 transition hover:bg-blue-500">
-                Jelajahi produk <span aria-hidden="true">→</span>
-              </a>
+              <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-blue-400/30 bg-blue-400/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-blue-300"><span className="h-1.5 w-1.5 rounded-full bg-cyan-300" />Pilihan teknologi untuk hidup lebih baik</p>
+              <h1 className="text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-5xl lg:text-[3.7rem]">Upgrade harimu.<br /><span className="text-blue-400">Mulai dari sini.</span></h1>
+              <p className="mt-5 max-w-md text-sm leading-6 text-slate-300 sm:text-base">Temukan gadget dan aksesori pilihan untuk bekerja lebih cerdas, bermain lebih seru, dan menikmati setiap momen.</p>
+              <div className="mt-7 flex flex-wrap items-center gap-3">
+                <a href="#products" className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-900/40 transition hover:bg-blue-500">
+                  Jelajahi koleksi <span aria-hidden="true">→</span>
+                </a>
+                <a href="#categories" className="rounded-xl border border-white/15 px-5 py-3 text-sm font-semibold text-white transition hover:border-blue-300/60 hover:bg-white/5">Lihat kategori</a>
+              </div>
+              <div className="mt-8 flex items-center gap-3 text-xs text-slate-400">
+                <span className="flex -space-x-2" aria-hidden="true">
+                  {["bg-blue-400", "bg-cyan-300", "bg-violet-400"].map((color) => <span key={color} className={`h-7 w-7 rounded-full border-2 border-[#0b1b39] ${color}`} />)}
+                </span>
+                <span><strong className="text-white">{formatNumber(normalizedProducts.length)}+</strong> pilihan gadget untukmu</span>
+              </div>
             </div>
-            <div className="relative flex min-h-48 items-center justify-center lg:min-h-64">
-              <div className="absolute h-56 w-56 rounded-full bg-blue-500/20 blur-3xl sm:h-72 sm:w-72" />
-              {heroProduct ? (
-                <div className="relative flex items-center justify-center gap-3 sm:gap-5">
-                  {normalizedProducts.slice(0, 3).map((product, index) => (
-                    <div key={product.id} className={`overflow-hidden rounded-3xl border border-white/10 bg-white/[0.08] p-2 shadow-2xl backdrop-blur-sm ${index === 1 ? "-translate-y-5 sm:-translate-y-8" : "translate-y-4"} ${index === 2 ? "hidden sm:block" : ""}`}>
-                      <div className={`relative h-28 w-24 overflow-hidden rounded-2xl sm:h-40 sm:w-36`}>
-                        <Image src={resolveImageUrl(product.image)} alt={product.name} fill sizes="(min-width: 640px) 144px, 96px" unoptimized className="object-cover" />
+            <div className="relative flex min-h-56 items-center justify-center lg:min-h-72">
+              <div className="absolute h-64 w-64 rounded-full bg-blue-500/20 blur-3xl sm:h-80 sm:w-80" />
+              {heroProducts.length > 0 ? (
+                <div className="relative flex items-center justify-center gap-2 sm:gap-4">
+                  {heroProducts.map((product, index) => (
+                    <div key={product.id} className={`group w-[6.5rem] overflow-hidden rounded-3xl border border-white/15 bg-white/[0.09] p-2 shadow-2xl backdrop-blur-md transition duration-300 hover:-translate-y-2 sm:w-36 ${index === 1 ? "z-10 -translate-y-5 sm:-translate-y-9" : "translate-y-5"} ${index === 2 ? "hidden sm:block" : ""}`}>
+                      <div className="relative aspect-square overflow-hidden rounded-2xl bg-white/90">
+                        <Image src={resolveImageUrl(product.image)} alt={product.name} fill sizes="(min-width: 640px) 144px, 104px" unoptimized className="object-contain p-1 transition duration-300 group-hover:scale-105" />
+                      </div>
+                      <div className="px-1 pb-1 pt-2">
+                        <p className="truncate text-[9px] font-semibold text-blue-200">{product.categoryName}</p>
+                        <p className="mt-0.5 truncate text-[10px] font-bold text-white sm:text-xs">{product.name}</p>
                       </div>
                     </div>
                   ))}
@@ -477,12 +553,15 @@ export default function ShopPage() {
             <a href="#products" className="text-xs font-bold text-blue-600 sm:text-sm">Lihat produk →</a>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {categories.slice(0, 4).map((category, index) => (
-              <button key={category.id} onClick={() => { setCategoryFilter(String(category.id)); document.getElementById("products")?.scrollIntoView({ behavior: "smooth" }); }} className={`group flex min-h-24 items-center justify-between overflow-hidden rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md ${isDark ? "border-slate-800 bg-slate-900" : "border-slate-100 bg-white"}`}>
-                <div><span className={`mb-2 inline-flex h-8 w-8 items-center justify-center rounded-xl ${["bg-blue-100 text-blue-700", "bg-violet-100 text-violet-700", "bg-cyan-100 text-cyan-700", "bg-amber-100 text-amber-700"][index]}`}>{["◉", "⌚", "▰", "✦"][index]}</span><h3 className={`text-sm font-bold ${baseTextClass}`}>{category.name}</h3><span className={`text-[11px] ${subtleTextClass}`}>Lihat koleksi</span></div>
-                <span className="text-2xl text-blue-600 transition group-hover:translate-x-1">→</span>
+            {categories.slice(0, 8).map((category, index) => {
+              const showcase = categoryShowcases.get(category.id);
+              return (
+              <button key={category.id} onClick={() => { setCurrentPage(1); setCategoryFilter(String(category.id)); document.getElementById("products")?.scrollIntoView({ behavior: "smooth" }); }} className={`group relative flex min-h-36 items-center justify-between overflow-hidden rounded-2xl border p-4 text-left transition hover:-translate-y-1 hover:shadow-xl ${isDark ? "border-slate-800 bg-slate-900" : "border-slate-100 bg-white shadow-sm"}`}>
+                {showcase && <div className="absolute -right-3 -bottom-5 h-32 w-32 overflow-hidden rounded-full opacity-75 transition duration-300 group-hover:scale-110 sm:h-36 sm:w-36"><Image src={resolveImageUrl(showcase.image)} alt="" fill sizes="144px" unoptimized className="object-cover" /></div>}
+                <div className="relative z-10 max-w-[65%]"><span className={`mb-3 inline-flex h-8 w-8 items-center justify-center rounded-xl ${["bg-blue-100 text-blue-700", "bg-violet-100 text-violet-700", "bg-cyan-100 text-cyan-700", "bg-amber-100 text-amber-700"][index % 4]}`}>{["◉", "⌚", "▰", "✦"][index % 4]}</span><h3 className={`text-sm font-bold ${baseTextClass}`}>{category.name}</h3><span className={`mt-1 inline-block text-[11px] ${subtleTextClass}`}>Jelajahi koleksi <span className="text-blue-600">→</span></span></div>
               </button>
-            ))}
+              );
+            })}
             {categories.length === 0 && <p className={`col-span-full rounded-2xl border border-dashed p-5 text-sm ${subtleTextClass}`}>Kategori akan tampil di sini setelah ditambahkan.</p>}
           </div>
         </section>
@@ -515,13 +594,13 @@ export default function ShopPage() {
                     className={inputClass}
                     placeholder="Cari produk..."
                     value={search}
-                    onChange={(e) => setSearch(e.target.value)}
+                    onChange={(e) => { setCurrentPage(1); setSearch(e.target.value); }}
                   />
                 </div>
                   <select
                     className={isDark ? "rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none" : "rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none"}
                     value={categoryFilter}
-                    onChange={(e) => setCategoryFilter(e.target.value)}
+                    onChange={(e) => { setCurrentPage(1); setCategoryFilter(e.target.value); }}
                   >
                     <option value="all">Semua kategori</option>
                     {categories.map((category) => (
@@ -533,13 +612,18 @@ export default function ShopPage() {
                   <select
                     className={isDark ? "rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none" : "rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none"}
                     value={sortFilter}
-                    onChange={(e) => setSortFilter(e.target.value)}
+                    onChange={(e) => { setCurrentPage(1); setSortFilter(e.target.value); }}
                   >
+                    <option value="featured">Rekomendasi</option>
                     <option value="newest">Terbaru</option>
                     <option value="price-high">Harga tertinggi</option>
                     <option value="price-low">Harga terendah</option>
                   </select>
                 </div>
+              </div>
+              <div className={`mt-4 flex flex-wrap items-center justify-between gap-2 border-t pt-3 text-xs ${isDark ? "border-slate-800 text-slate-400" : "border-slate-100 text-slate-500"}`}>
+                <span>Menampilkan <strong className={baseTextClass}>{formatNumber(filteredProducts.length === 0 ? 0 : (currentPage - 1) * pageSize + 1)}–{formatNumber(Math.min(currentPage * pageSize, filteredProducts.length))}</strong> dari <strong className={baseTextClass}>{formatNumber(filteredProducts.length)}</strong> produk</span>
+                <span>Gratis ongkir untuk pesanan pilihan</span>
               </div>
             </div>
 
@@ -549,16 +633,17 @@ export default function ShopPage() {
               </div>
             ) : loadMessage ? (
               <div className={`${shellClass} flex flex-wrap items-center justify-between gap-3 rounded-[1.75rem] p-6 text-sm ${subtleTextClass}`}>
-                <span>Katalog sementara tidak tersedia. Pastikan backend aktif, lalu coba lagi.</span>
-                <button type="button" onClick={() => window.location.reload()} className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-700">Coba lagi</button>
+                <span>Katalog sementara tidak tersedia. {loadMessage}</span>
+                <button type="button" onClick={() => void loadCatalog()} className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-700">Coba lagi</button>
               </div>
             ) : filteredProducts.length === 0 ? (
               <div className={`${shellClass} rounded-[1.75rem] p-6 text-sm ${subtleTextClass}`}>
-                {loadMessage ? "Produk belum dapat dimuat. Periksa koneksi backend lalu coba lagi." : "Produk tidak ditemukan. Coba ubah kata kunci atau kategori."}
+                Produk tidak ditemukan. Coba ubah kata kunci atau kategori.
               </div>
             ) : (
+              <>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-                {filteredProducts.map((product) => {
+                {visibleProducts.map((product) => {
                   const selectedQuantity = cart[product.id] || 0;
                   const remaining = Math.max(product.stock - selectedQuantity, 0);
 
@@ -576,6 +661,9 @@ export default function ShopPage() {
                         <div className="absolute left-3 top-3 rounded-md bg-blue-600 px-2 py-1 text-[10px] font-bold uppercase text-white">
                           {product.stock > 0 ? "Tersedia" : "Habis"}
                         </div>
+                        <div className="absolute right-3 top-3 rounded-md bg-white/90 px-2 py-1 text-[9px] font-semibold text-slate-600 shadow-sm">
+                          Foto kategori
+                        </div>
                       </div>
 
                       <div className="space-y-4 p-4">
@@ -584,7 +672,7 @@ export default function ShopPage() {
                             {product.name}
                           </h3>
                           <p className={`mt-1 line-clamp-2 text-sm ${subtleTextClass}`}>
-                            {product.description || "No description provided."}
+                            {product.description || "Belum ada deskripsi produk."}
                           </p>
                         </div>
 
@@ -611,7 +699,7 @@ export default function ShopPage() {
                             {selectedQuantity > 0 ? `${selectedQuantity} di keranjang` : "Tambah"}
                           </div>
                           <button
-                            className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-300"
+                            className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
                             onClick={() => incrementQuantity(product)}
                             disabled={remaining === 0}
                           >
@@ -623,6 +711,16 @@ export default function ShopPage() {
                   );
                 })}
               </div>
+              {pageCount > 1 && (
+                <nav aria-label="Halaman produk" className={`${shellClass} flex flex-wrap items-center justify-between gap-3 rounded-2xl px-4 py-3`}>
+                  <span className={`text-xs ${subtleTextClass}`}>Halaman {formatNumber(currentPage)} dari {formatNumber(pageCount)}</span>
+                  <div className="flex items-center gap-2">
+                    <button type="button" onClick={() => { setCurrentPage((page) => Math.max(1, page - 1)); document.getElementById("products")?.scrollIntoView({ behavior: "smooth" }); }} disabled={currentPage === 1} className={`rounded-xl border px-3 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-40 ${isDark ? "border-slate-700 hover:bg-slate-800" : "border-slate-200 hover:bg-slate-50"}`}>← Sebelumnya</button>
+                    <button type="button" onClick={() => { setCurrentPage((page) => Math.min(pageCount, page + 1)); document.getElementById("products")?.scrollIntoView({ behavior: "smooth" }); }} disabled={currentPage >= pageCount} className="rounded-xl bg-blue-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40">Berikutnya →</button>
+                  </div>
+                </nav>
+              )}
+              </>
             )}
           </section>
 
@@ -633,7 +731,7 @@ export default function ShopPage() {
                   <h2 className={`text-lg font-semibold ${baseTextClass}`}>Ringkasan pesanan</h2>
                   <p className={`text-sm ${subtleTextClass}`}>Periksa keranjang sebelum membuat pesanan.</p>
                 </div>
-                <div className={`rounded-full px-3 py-1 text-xs font-semibold ${isDark ? "bg-indigo-950/40 text-indigo-300" : "bg-indigo-50 text-indigo-700"}`}>
+                <div className={`rounded-full px-3 py-1 text-xs font-semibold ${isDark ? "bg-blue-950/40 text-blue-300" : "bg-blue-50 text-blue-700"}`}>
                   {cartItems.length} produk
                 </div>
               </div>
@@ -644,7 +742,7 @@ export default function ShopPage() {
                     Alamat pengiriman
                   </label>
                   <textarea
-                    className={isDark ? "mt-2 min-h-28 w-full rounded-2xl border border-slate-700 bg-slate-800 px-4 py-3 text-sm text-slate-100 outline-none placeholder-slate-500 focus:border-indigo-400" : "mt-2 min-h-28 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none placeholder-slate-400 focus:border-indigo-200"}
+                    className={isDark ? "mt-2 min-h-28 w-full rounded-2xl border border-slate-700 bg-slate-800 px-4 py-3 text-sm text-slate-100 outline-none placeholder-slate-500 focus:border-blue-400" : "mt-2 min-h-28 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none placeholder-slate-400 focus:border-blue-300"}
                     placeholder="Nama jalan, kota, provinsi, kode pos"
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
@@ -683,7 +781,7 @@ export default function ShopPage() {
                   </div>
                 )}
 
-                <div className={`rounded-2xl p-4 shadow-[0_10px_30px_rgba(0,0,0,0.22)] ${isDark ? "bg-slate-950 text-white" : "bg-indigo-600 text-white"}`}>
+                <div className={`rounded-2xl p-4 shadow-[0_10px_30px_rgba(0,0,0,0.22)] ${isDark ? "bg-slate-950 text-white" : "bg-blue-700 text-white"}`}>
                   <div className="flex items-center justify-between text-sm text-slate-300">
                     <span>Total barang</span>
                     <span>{totalItems}</span>
@@ -713,7 +811,7 @@ export default function ShopPage() {
                 </div>
                 {lastOrder?.status && (
                   <span className={`rounded-full px-3 py-1 text-xs font-semibold ${isDark ? "bg-emerald-950/40 text-emerald-300" : "bg-emerald-100 text-emerald-700"}`}>
-                    {lastOrder.status}
+                    {formatOrderStatus(lastOrder.status)}
                   </span>
                 )}
               </div>
@@ -743,7 +841,7 @@ export default function ShopPage() {
         </div>
 
         <section className="grid gap-4 md:grid-cols-2">
-          <div className="flex min-h-36 items-center justify-between overflow-hidden rounded-2xl bg-gradient-to-r from-blue-100 to-indigo-50 p-6 dark:from-slate-900 dark:to-blue-950">
+          <div className="flex min-h-36 items-center justify-between overflow-hidden rounded-2xl bg-gradient-to-r from-blue-100 to-sky-50 p-6 dark:from-slate-900 dark:to-blue-950">
             <div><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-700 dark:text-blue-300">Koleksi terbaru</p><h2 className={`mt-2 max-w-xs text-xl font-extrabold ${baseTextClass}`}>Temukan perangkat generasi berikutnya</h2><a href="#products" className="mt-3 inline-block text-xs font-bold text-blue-700 dark:text-blue-300">Belanja sekarang →</a></div>
             <span className="text-5xl" aria-hidden="true">◉</span>
           </div>
@@ -755,16 +853,19 @@ export default function ShopPage() {
 
         <footer className="overflow-hidden rounded-2xl bg-[#071126] text-white">
           <div className="flex flex-col gap-4 bg-blue-600 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
-            <div><h2 className="font-bold">Tetap terhubung dengan GizmoHub</h2><p className="text-xs text-blue-100">Kabar produk dan inspirasi teknologi terbaru.</p></div>
+            <div><h2 className="font-bold">Tetap terhubung dengan native.co</h2><p className="text-xs text-blue-100">Kabar produk dan inspirasi teknologi terbaru.</p></div>
             <a href="#products" className="w-fit rounded-lg bg-[#071126] px-4 py-2 text-xs font-bold text-white transition hover:bg-slate-900">Jelajahi koleksi</a>
           </div>
           <div className="grid gap-6 px-6 py-7 sm:grid-cols-2 lg:grid-cols-4">
-            <div><Link href="/shop" className="text-lg font-extrabold">Gizmo<span className="text-blue-400">Hub</span></Link><p className="mt-2 max-w-xs text-xs leading-5 text-slate-400">Destinasi gadget pilihan untuk kebutuhan sehari-hari.</p></div>
+            <div><Link href="/shop" className="text-lg font-extrabold">native<span className="text-blue-400">.co</span></Link><p className="mt-2 max-w-xs text-xs leading-5 text-slate-400">Destinasi gadget pilihan untuk kebutuhan sehari-hari.</p></div>
             <div><h3 className="text-xs font-bold">Belanja</h3><a href="#products" className="mt-3 block text-xs text-slate-400 hover:text-white">Semua produk</a><a href="#categories" className="mt-2 block text-xs text-slate-400 hover:text-white">Kategori</a></div>
             <div><h3 className="text-xs font-bold">Layanan pelanggan</h3><p className="mt-3 text-xs text-slate-400">Dukungan belanja dan informasi pesanan tersedia melalui akun Anda.</p></div>
             <div><h3 className="text-xs font-bold">Akun</h3><Link href={tokenAvailable ? "/admin" : "/login"} className="mt-3 block text-xs text-slate-400 hover:text-white">{tokenAvailable ? "Dashboard" : "Masuk / Daftar"}</Link><a href="#checkout" className="mt-2 block text-xs text-slate-400 hover:text-white">Keranjang</a></div>
           </div>
-          <div className="border-t border-white/10 px-6 py-3 text-center text-[10px] text-slate-500">© {new Date().getFullYear()} GizmoHub. Semua hak dilindungi.</div>
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 border-t border-white/10 px-6 py-3 text-center text-[10px] text-slate-500">
+            <span>© {new Date().getFullYear()} native.co. Semua hak dilindungi.</span>
+            <a href={`${ASSET_BASE}/uploads/products/commons-attribution.json`} target="_blank" rel="noreferrer" className="underline decoration-slate-600 underline-offset-2 transition hover:text-slate-300">Atribusi foto Wikimedia Commons</a>
+          </div>
         </footer>
       </div>
     </div>

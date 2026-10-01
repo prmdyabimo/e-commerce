@@ -5,8 +5,10 @@ import Swal from "sweetalert2";
 import {
   fetchOrderById,
   fetchOrders,
+  updateOrderStatus,
   type Order,
   type OrderItem,
+  type OrderStatus,
 } from "../../../lib/api";
 
 type NormalizedOrder = {
@@ -111,9 +113,11 @@ export default function AdminOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<NormalizedOrder | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [updatingOrderId, setUpdatingOrderId] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [userName, setUserName] = useState("Admin");
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     const email = localStorage.getItem("user_email");
@@ -125,10 +129,12 @@ export default function AdminOrdersPage() {
   async function loadOrders() {
     try {
       setLoading(true);
+      setLoadError(null);
       const data = await fetchOrders();
       setOrders(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("load orders error", err);
+      setLoadError(err instanceof Error ? err.message : "Pesanan gagal dimuat.");
     } finally {
       setLoading(false);
     }
@@ -161,7 +167,9 @@ export default function AdminOrdersPage() {
   }, [normalizedOrders, search, statusFilter]);
 
   const orderStats = useMemo(() => {
-    const totalRevenue = normalizedOrders.reduce((acc, order) => acc + order.totalPrice, 0);
+    const totalRevenue = normalizedOrders
+      .filter((order) => ["paid", "processed", "shipped", "completed"].includes(order.status.toLowerCase()))
+      .reduce((acc, order) => acc + order.totalPrice, 0);
     const pending = normalizedOrders.filter((order) => order.status.toLowerCase() === "pending").length;
     const completed = normalizedOrders.filter((order) => order.status.toLowerCase() === "completed").length;
 
@@ -171,6 +179,40 @@ export default function AdminOrdersPage() {
       completed,
     };
   }, [normalizedOrders]);
+
+  async function changeOrderStatus(orderId: number, status: OrderStatus) {
+    try {
+      setUpdatingOrderId(orderId);
+      const updatedOrder = await updateOrderStatus(orderId, status);
+      setOrders((current) =>
+        current.map((order) => {
+          const raw = order as unknown as Record<string, unknown>;
+          const id = Number(raw.id ?? raw.ID);
+          return id === orderId ? updatedOrder : order;
+        }),
+      );
+      setSelectedOrder((current) =>
+        current?.id === orderId
+          ? normalizeOrder(updatedOrder, current.key)
+          : current,
+      );
+      await Swal.fire({
+        icon: "success",
+        title: "Status pesanan diperbarui",
+        timer: 1300,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      await Swal.fire({
+        icon: "error",
+        title: "Status gagal diperbarui",
+        text: message,
+      });
+    } finally {
+      setUpdatingOrderId(null);
+    }
+  }
 
   async function openDetail(order: NormalizedOrder) {
     try {
@@ -256,7 +298,7 @@ export default function AdminOrdersPage() {
           {
             label: "Pendapatan",
             value: `Rp ${formatNumber(orderStats.totalRevenue)}`,
-            note: "Total nilai pesanan",
+            note: "Pesanan dibayar dan diproses",
             icon: (
               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M4 12h16" />
@@ -288,6 +330,13 @@ export default function AdminOrdersPage() {
         ))}
       </div>
 
+      {loadError && (
+        <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-200">
+          <span>Data pesanan belum dapat dimuat: {loadError}</span>
+          <button type="button" onClick={() => void loadOrders()} className="rounded-lg bg-rose-700 px-3 py-2 text-xs font-bold text-white hover:bg-rose-800">Coba lagi</button>
+        </div>
+      )}
+
       <div className="rounded-2xl border border-slate-200/70 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative min-w-[220px] flex-1">
@@ -318,6 +367,7 @@ export default function AdminOrdersPage() {
             <option value="cancelled">Dibatalkan</option>
           </select>
           <button
+            type="button"
             className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
             onClick={() => {
               setSearch("");
@@ -367,9 +417,17 @@ export default function AdminOrdersPage() {
                       Rp {formatNumber(order.totalPrice)}
                     </td>
                     <td className="px-4 py-4">
-                      <span className={`rounded-full px-2 py-1 text-xs font-semibold ${statusBadgeClass(order.status)}`}>
-                        {formatOrderStatus(order.status)}
-                      </span>
+                      <select
+                        aria-label={`Ubah status pesanan ${order.id}`}
+                        className={`rounded-full border-0 px-2 py-1 text-xs font-semibold outline-none ring-1 ring-inset ring-transparent focus:ring-blue-500 ${statusBadgeClass(order.status)}`}
+                        value={order.status.toLowerCase()}
+                        onChange={(event) => void changeOrderStatus(order.id, event.target.value as OrderStatus)}
+                        disabled={updatingOrderId === order.id}
+                      >
+                        {(["pending", "paid", "processed", "shipped", "completed", "cancelled"] as const).map((status) => (
+                          <option key={status} value={status}>{formatOrderStatus(status)}</option>
+                        ))}
+                      </select>
                     </td>
                     <td className="px-4 py-4 text-slate-700 dark:text-slate-300">
                       {order.itemCount} barang

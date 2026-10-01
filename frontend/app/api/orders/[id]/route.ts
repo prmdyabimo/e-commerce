@@ -6,5 +6,6 @@ export async function GET(request: Request) {
   if (!id || !/^[1-9]\d*$/.test(id)) {
     return NextResponse.json({ error: "Invalid order id" }, { status: 400 });
   }
+
   return proxyBackendRequest(request, `/orders/${id}`);
 }

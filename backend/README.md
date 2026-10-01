@@ -1,4 +1,4 @@
-# Mini E-Commerce Backend
+# native.co Backend
 
 REST API untuk aplikasi e-commerce, dibangun menggunakan Go, Gin, GORM, dan MySQL.
 
@@ -32,6 +32,32 @@ go run .
 
 Server berjalan pada port `8080` secara default. Endpoint `/health` digunakan untuk health check.
 
+### Mengisi katalog contoh
+
+Untuk menambahkan 1.000 produk katalog contoh beserta ilustrasi SVG lokal dan kategori, dari direktori `backend` jalankan:
+
+```powershell
+go run .\scripts\seed_catalog
+```
+
+Seeder aman dijalankan ulang: produk contoh yang sudah ada tidak akan diduplikasi. Gambar disimpan di `uploads/products`, sehingga tetap lokal dan tidak bergantung pada layanan gambar pihak ketiga.
+
+Untuk mengosongkan katalog sebelum mengunggah produk sendiri, jalankan dari direktori `backend`:
+
+```powershell
+go run .\scripts\clear_catalog
+```
+
+Perintah ini mengarsipkan seluruh produk aktif menggunakan soft delete: produk hilang dari toko dan daftar admin, sedangkan kategori, riwayat pesanan, dan file gambar yang diunggah tetap disimpan.
+
+Untuk mengganti gambar katalog dengan foto kategori berlisensi dari Wikimedia Commons, jalankan:
+
+```powershell
+go run .\scripts\import_commons_photos
+```
+
+Foto diunduh ke `uploads/products`, dipakai sebagai foto representatif kategori (bukan foto resmi setiap model), dan atribusi artis, sumber, serta lisensinya disimpan di `uploads/products/commons-attribution.json`. Toko menyediakan tautan ke manifest tersebut.
+
 ## Akses API
 
 Endpoint produk dan kategori untuk katalog dapat diakses publik:
@@ -55,6 +81,18 @@ Authorization: Bearer <jwt-token>
 ```
 
 Login menerima email dan password, lalu mengembalikan token JWT berlaku selama 24 jam. Registrasi dan pembuatan user admin mensyaratkan password minimal 8 karakter. User baru melalui registrasi publik selalu mendapat role `user`.
+
+### Menyiapkan admin pertama
+
+Tidak ada akun admin bawaan. Daftarkan akun melalui halaman `/register`, lalu promosikan hanya akun yang Anda kendalikan melalui MySQL:
+
+```sql
+UPDATE users
+SET role = 'admin'
+WHERE email = 'email-yang-didaftarkan';
+```
+
+Pastikan query mengubah tepat satu baris, lalu masuk kembali agar token baru memuat role admin. Jangan membuka endpoint registrasi publik untuk membuat admin.
 
 Pembuatan produk menggunakan JSON. Update produk menggunakan `multipart/form-data` dengan field `name`, `price`, `description`, `stock`, `category_id`, dan `image` (opsional). Upload produk melalui `/upload` juga menggunakan field `image`.
 

@@ -4,8 +4,8 @@ import "./globals.css";
 import "sweetalert2/dist/sweetalert2.min.css";
 
 export const metadata: Metadata = {
-  title: "GizmoHub | Gadget & Aksesori Pilihan",
-  description: "Temukan gadget dan aksesori pilihan di GizmoHub.",
+  title: "native.co | Gadget & Aksesori Pilihan",
+  description: "Temukan gadget dan aksesori pilihan di native.co.",
 };
 
 export default function RootLayout({

@@ -23,14 +23,17 @@ export default function CategoriesPage() {
   const [search, setSearch] = useState("");
   const [nameInput, setNameInput] = useState("");
   const [saving, setSaving] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   async function load() {
     try {
       setLoading(true);
+      setLoadError(null);
       const data = await fetchCategories();
       setCategories(data || []);
     } catch (err) {
       console.error("load categories error", err);
+      setLoadError(err instanceof Error ? err.message : "Kategori gagal dimuat.");
     } finally {
       setLoading(false);
     }
@@ -189,6 +192,11 @@ export default function CategoriesPage() {
       <div className="rounded-2xl border border-slate-200/70 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
         {loading ? (
           <div className="p-6 text-sm text-slate-500 dark:text-slate-400">Memuat kategori...</div>
+        ) : loadError ? (
+          <div role="alert" className="flex flex-wrap items-center justify-between gap-3 p-6 text-sm text-rose-700 dark:text-rose-300">
+            <span>Kategori gagal dimuat: {loadError}</span>
+            <button type="button" onClick={() => void load()} className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-700">Coba lagi</button>
+          </div>
         ) : filtered.length === 0 ? (
           <div className="p-6 text-sm text-slate-500 dark:text-slate-400">
             Belum ada kategori. Tambahkan kategori pertama Anda.

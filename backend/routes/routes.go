@@ -39,6 +39,9 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB) {
 	admin := protected.Group("/")
 	admin.Use(middlewares.RequireRole("admin"))
 	{
+		admin.GET("/admin/analytics", orderController.GetSalesAnalytics)
+		admin.PUT("/orders/:id/status", orderController.UpdateStatus)
+
 		admin.POST("/upload", uploadController.UploadProductImage)
 
 		admin.POST("/products", productController.Create)

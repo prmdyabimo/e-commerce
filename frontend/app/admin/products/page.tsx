@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import Swal from "sweetalert2";
 import {
   fetchProducts,
@@ -54,7 +55,8 @@ export default function ProductsPage() {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [sortFilter, setSortFilter] = useState("newest");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [stockFilter, setStockFilter] = useState("all");
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<{
     src: string;
     alt: string;
@@ -79,6 +81,7 @@ export default function ProductsPage() {
   async function load() {
     try {
       setLoading(true);
+      setLoadError(null);
 
       const productData = await fetchProducts();
       const categoryData = await fetchCategories();
@@ -87,6 +90,7 @@ export default function ProductsPage() {
       setCategories(categoryData || []);
     } catch (err) {
       console.error("load data error", err);
+      setLoadError(err instanceof Error ? err.message : "Data produk gagal dimuat.");
     } finally {
       setLoading(false);
     }
@@ -173,8 +177,11 @@ export default function ProductsPage() {
       const categoryMatch =
         categoryFilter === "all" ||
         (item.categoryId && String(item.categoryId) === categoryFilter);
-      const statusMatch = statusFilter === "all" || statusFilter === "active";
-      return searchMatch && categoryMatch && statusMatch;
+      const stockMatch =
+        stockFilter === "all" ||
+        (stockFilter === "available" && item.stock > 0) ||
+        (stockFilter === "out-of-stock" && item.stock === 0);
+      return searchMatch && categoryMatch && stockMatch;
     });
 
     const sorted = [...base];
@@ -186,7 +193,7 @@ export default function ProductsPage() {
       sorted.sort((a, b) => (b.id ?? 0) - (a.id ?? 0));
     }
     return sorted;
-  }, [normalizedProducts, search, categoryFilter, sortFilter, statusFilter]);
+  }, [normalizedProducts, search, categoryFilter, sortFilter, stockFilter]);
 
   async function onCreate(payload: {
     name: string;
@@ -387,12 +394,12 @@ export default function ProductsPage() {
               </select>
               <select
                 className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
+                value={stockFilter}
+                onChange={(e) => setStockFilter(e.target.value)}
               >
-                <option value="all">Semua status</option>
-                <option value="active">Aktif</option>
-                <option value="inactive">Tidak aktif</option>
+                <option value="all">Semua stok</option>
+                <option value="available">Tersedia</option>
+                <option value="out-of-stock">Stok habis</option>
               </select>
               <button
                 className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
@@ -400,7 +407,7 @@ export default function ProductsPage() {
                   setSearch("");
                   setCategoryFilter("all");
                   setSortFilter("newest");
-                  setStatusFilter("all");
+                  setStockFilter("all");
                 }}
               >
                 Atur ulang
@@ -411,6 +418,11 @@ export default function ProductsPage() {
           <div className="rounded-2xl border border-slate-200/70 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
             {loading ? (
               <div className="p-6 text-sm text-slate-500 dark:text-slate-400">Memuat produk...</div>
+            ) : loadError ? (
+              <div role="alert" className="flex flex-wrap items-center justify-between gap-3 p-6 text-sm text-rose-700 dark:text-rose-300">
+                <span>Produk gagal dimuat: {loadError}</span>
+                <button type="button" onClick={() => void load()} className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-700">Coba lagi</button>
+              </div>
             ) : filteredProducts.length === 0 ? (
               <div className="p-6 text-sm text-slate-500 dark:text-slate-400">
                 Belum ada produk. Tambahkan produk pertama Anda.
@@ -447,7 +459,7 @@ export default function ProductsPage() {
                                 }
                                 title="Lihat gambar produk"
                               >
-                                <img src={imageUrl} alt={item.name} className="h-full w-full object-cover" />
+                                <Image src={imageUrl} alt={item.name} width={48} height={48} unoptimized className="h-full w-full object-cover" />
                               </button>
                               <div>
                                 <div className="font-semibold text-slate-900 dark:text-slate-100">
@@ -469,8 +481,8 @@ export default function ProductsPage() {
                           </td>
                           <td className="px-4 py-4 text-slate-700 dark:text-slate-300">{formatNumber(item.stock)}</td>
                           <td className="px-4 py-4">
-                            <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">
-                              Aktif
+                            <span className={`rounded-full px-2 py-1 text-xs font-semibold ${item.stock > 0 ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
+                              {item.stock > 0 ? "Tersedia" : "Stok habis"}
                             </span>
                           </td>
                           <td className="px-4 py-4">
@@ -517,21 +529,10 @@ export default function ProductsPage() {
               </div>
             )}
 
-            {!loading && filteredProducts.length > 0 && (
+            {!loading && !loadError && filteredProducts.length > 0 && (
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-4 py-3 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
                 <div>
                   Menampilkan 1–{filteredProducts.length} dari {normalizedProducts.length} produk
-                </div>
-                <div className="flex items-center gap-2">
-                  <button className="rounded-md border border-slate-200 px-2 py-1 text-slate-500 dark:border-slate-700 dark:text-slate-300">
-                    1
-                  </button>
-                  <button className="rounded-md border border-slate-200 px-2 py-1 text-slate-400 dark:border-slate-700 dark:text-slate-500">
-                    2
-                  </button>
-                  <button className="rounded-md border border-slate-200 px-2 py-1 text-slate-400 dark:border-slate-700 dark:text-slate-500">
-                    3
-                  </button>
                 </div>
               </div>
             )}
@@ -593,7 +594,7 @@ export default function ProductsPage() {
                 <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                   {previewImage.name}
                 </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Product image preview</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Pratinjau gambar produk</p>
               </div>
               <button
                 className="rounded-lg border border-slate-200 p-2 text-slate-500 hover:text-slate-700 dark:border-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
@@ -605,9 +606,12 @@ export default function ProductsPage() {
               </button>
             </div>
             <div className="flex max-h-[75vh] items-center justify-center bg-slate-50 p-4 dark:bg-slate-950">
-              <img
+              <Image
                 src={previewImage.src}
                 alt={previewImage.alt}
+                width={1200}
+                height={900}
+                unoptimized
                 className="max-h-[70vh] max-w-full rounded-xl object-contain"
               />
             </div>

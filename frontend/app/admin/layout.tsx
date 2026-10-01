@@ -60,10 +60,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       "/admin/products": "Produk",
       "/admin/categories": "Kategori",
       "/admin/orders": "Pesanan",
+      "/admin/analytics": "Analisis penjualan",
       "/admin/users": "Pengguna",
     };
     const currentTitle = titles[pathname] || "Admin";
-    document.title = `GizmoHub Admin - ${currentTitle}`;
+    document.title = `native.co Admin - ${currentTitle}`;
   }, [pathname]);
 
   if (checking || !authorized) {
@@ -77,6 +78,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     "/admin/products": "Produk",
     "/admin/categories": "Kategori",
     "/admin/orders": "Pesanan",
+    "/admin/analytics": "Analisis penjualan",
     "/admin/users": "Pengguna",
   };
   const currentTitle = pageTitle[pathname] || "Dashboard";
@@ -113,7 +115,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   </svg>
                 </button>
                 <div className="min-w-0">
-                  <p className={`truncate text-[11px] font-medium ${theme === "dark" ? "text-slate-400" : "text-slate-500"}`}>GizmoHub Control Panel</p>
+                  <p className={`truncate text-[11px] font-medium ${theme === "dark" ? "text-slate-400" : "text-slate-500"}`}>native.co · Panel Admin</p>
                   <h1 className={`truncate text-lg font-bold tracking-tight ${theme === "dark" ? "text-white" : "text-slate-900"}`}>{currentTitle}</h1>
                 </div>
               </div>

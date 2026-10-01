@@ -8,9 +8,8 @@ import Swal from "sweetalert2";
 type Theme = "light" | "dark";
 type AdminNavItem = {
   label: string;
-  href?: string;
+  href: string;
   icon: React.ReactNode;
-  disabled?: boolean;
 };
 type AdminNavSection = {
   title: string;
@@ -83,6 +82,17 @@ export default function AdminSidebar({
           ),
         },
         {
+          label: "Analisis penjualan",
+          href: "/admin/analytics",
+          icon: (
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M4 19V5m0 14h16" />
+              <path d="m7 15 4-4 3 2 5-6" />
+              <path d="M16 7h3v3" />
+            </svg>
+          ),
+        },
+        {
           label: "Pengguna",
           href: "/admin/users",
           icon: (
@@ -96,65 +106,16 @@ export default function AdminSidebar({
         },
       ],
     },
-    {
-      title: "Analitik",
-      items: [
-        {
-          label: "Penjualan",
-          icon: (
-            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M3 12h4l3-7 4 14 3-7h4" />
-            </svg>
-          ),
-          disabled: true,
-        },
-        {
-          label: "Laporan",
-          icon: (
-            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M4 4h16v16H4z" />
-              <path d="M8 9h8M8 13h6M8 17h4" />
-            </svg>
-          ),
-          disabled: true,
-        },
-      ],
-    },
-    {
-      title: "Pengaturan",
-      items: [
-        {
-          label: "Profil",
-          icon: (
-            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="8" r="4" />
-              <path d="M4 20a8 8 0 0 1 16 0" />
-            </svg>
-          ),
-          disabled: true,
-        },
-        {
-          label: "Pengaturan",
-          icon: (
-            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 2l1.2 2.4 2.6.4-1.9 1.9.4 2.6L12 8.8 9.7 9.3l.4-2.6L8.2 4.8l2.6-.4L12 2z" />
-              <circle cx="12" cy="12" r="3" />
-            </svg>
-          ),
-          disabled: true,
-        },
-      ],
-    },
   ];
 
   async function onLogout() {
     const confirmResult = await Swal.fire({
-      title: "Logout from admin?",
-      text: "You will exit the current session.",
+      title: "Keluar dari panel admin?",
+      text: "Anda akan mengakhiri sesi saat ini.",
       icon: "question",
       showCancelButton: true,
-      confirmButtonText: "Logout",
-      cancelButtonText: "Cancel",
+      confirmButtonText: "Keluar",
+      cancelButtonText: "Batal",
     });
     if (!confirmResult.isConfirmed) return;
     localStorage.removeItem("token");
@@ -162,7 +123,7 @@ export default function AdminSidebar({
     localStorage.removeItem("user_role");
     await Swal.fire({
       icon: "success",
-      title: "Successfully logged out",
+      title: "Berhasil keluar",
       timer: 1200,
       showConfirmButton: false,
     });
@@ -192,10 +153,10 @@ export default function AdminSidebar({
             </div>
             <div>
               <div className={`text-lg font-semibold ${theme === "dark" ? "text-white" : "text-slate-900"}`}>
-                Gizmo<span className="text-blue-600">Hub</span>
+                native<span className="text-blue-600">.co</span>
               </div>
               <div className={`text-xs ${theme === "dark" ? "text-slate-400" : "text-slate-500"}`}>
-                Control Panel
+                Panel admin
               </div>
             </div>
           </div>
@@ -219,24 +180,6 @@ export default function AdminSidebar({
                       : theme === "dark"
                       ? "text-slate-400 hover:bg-slate-800 hover:text-slate-300"
                       : "text-slate-600 hover:bg-slate-50 hover:text-slate-900";
-                    const disabledClass = item.disabled
-                      ? "cursor-not-allowed opacity-40"
-                      : "cursor-pointer";
-
-                    if (!item.href || item.disabled) {
-                      return (
-                        <div
-                          key={item.label}
-                          className={`${baseClass} ${activeClass} ${disabledClass}`}
-                        >
-                          <span className={theme === "dark" ? "text-slate-500" : "text-slate-500"}>
-                            {item.icon}
-                          </span>
-                          <span>{item.label}</span>
-                        </div>
-                      );
-                    }
-
                     return (
                       <Link
                         key={item.label}
@@ -244,7 +187,7 @@ export default function AdminSidebar({
                         onClick={() => {
                           if (onToggle) onToggle();
                         }}
-                        className={`${baseClass} ${activeClass} ${disabledClass}`}
+                        className={`${baseClass} ${activeClass} cursor-pointer`}
                       >
                         <span className={theme === "dark" ? "text-slate-500" : "text-slate-500"}>
                           {item.icon}

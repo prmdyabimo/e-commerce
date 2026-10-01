@@ -18,6 +18,7 @@ export type User = {
   id?: number;
   name?: string;
   email: string;
+  role?: "user" | "admin";
 };
 
 export type Category = {
@@ -55,6 +56,31 @@ export type Order = {
 export type OrderInputItem = {
   product_id: number;
   quantity: number;
+};
+
+export type SalesAnalytics = {
+  days: 7 | 30;
+  start_date: string;
+  end_date: string;
+  summary: {
+    orders: number;
+    revenue: number;
+    confirmed_orders: number;
+    pending_orders: number;
+    cancelled_orders: number;
+  };
+  daily_sales: Array<{
+    date: string;
+    orders: number;
+    revenue: number;
+  }>;
+  top_products: Array<{
+    product_id: number;
+    name: string;
+    image: string;
+    quantity: number;
+    revenue: number;
+  }>;
 };
 
 // ===============================
@@ -362,6 +388,7 @@ export async function updateUser(
   payload: {
     name?: string;
     email?: string;
+    role?: "user" | "admin";
   },
 ): Promise<User> {
   const numericId = typeof id === "number" ? id : Number(id);
@@ -406,6 +433,23 @@ export async function createUser(payload: {
   }
 
   return body as User;
+}
+
+export async function deleteUser(id: string | number): Promise<{ message: string }> {
+  const numericId = typeof id === "number" ? id : Number(id);
+  if (!Number.isFinite(numericId) || numericId <= 0) {
+    throw new Error("Invalid user id");
+  }
+
+  const res = await fetch(`${API_ROOT}/users/${numericId}`, {
+    method: "DELETE",
+    headers: getAuthHeaders(),
+  });
+  const body = await parseResponse(res);
+  if (!res.ok) {
+    throw new Error(body?.error || body?.message || `Delete user failed: ${res.status}`);
+  }
+  return body as { message: string };
 }
 
 // ===============================
@@ -472,6 +516,19 @@ export async function fetchOrders(): Promise<Order[]> {
   return body as Order[];
 }
 
+export async function fetchSalesAnalytics(days: 7 | 30): Promise<SalesAnalytics> {
+  const res = await fetch(`${API_ROOT}/admin/analytics?days=${days}`, {
+    headers: getAuthHeaders(),
+  });
+  const body = await parseResponse(res);
+
+  if (!res.ok) {
+    throw new Error(body?.error || body?.message || `Fetch sales analytics failed: ${res.status}`);
+  }
+
+  return body as SalesAnalytics;
+}
+
 export async function fetchOrderById(
   id: string | number,
 ): Promise<Order> {
@@ -493,6 +550,27 @@ export async function fetchOrderById(
     );
   }
 
+  return body as Order;
+}
+
+export async function updateOrderStatus(
+  id: string | number,
+  status: OrderStatus,
+): Promise<Order> {
+  const numericId = typeof id === "number" ? id : Number(id);
+  if (!Number.isFinite(numericId) || numericId <= 0) {
+    throw new Error("Invalid order id");
+  }
+
+  const res = await fetch(`${API_ROOT}/orders/${numericId}/status`, {
+    method: "PUT",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ status }),
+  });
+  const body = await parseResponse(res);
+  if (!res.ok) {
+    throw new Error(body?.error || body?.message || `Update order failed: ${res.status}`);
+  }
   return body as Order;
 }
 

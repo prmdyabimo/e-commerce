@@ -46,6 +46,18 @@ function statusClass(status: string) {
   }
 }
 
+function formatOrderStatus(status: string) {
+  const labels: Record<string, string> = {
+    pending: "Menunggu",
+    paid: "Dibayar",
+    processed: "Diproses",
+    shipped: "Dikirim",
+    completed: "Selesai",
+    cancelled: "Dibatalkan",
+  };
+  return labels[status.toLowerCase()] ?? status;
+}
+
 export default function AdminIndex() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -94,7 +106,14 @@ export default function AdminIndex() {
     [products],
   );
   const totalRevenue = useMemo(
-    () => orders.reduce((sum, order) => sum + (order.total_price ?? 0), 0),
+    () =>
+      orders
+        .filter((order) =>
+          ["paid", "processed", "shipped", "completed"].includes(
+            (order.status ?? "").toLowerCase(),
+          ),
+        )
+        .reduce((sum, order) => sum + (order.total_price ?? 0), 0),
     [orders],
   );
   const lowStockProducts = useMemo(
@@ -128,7 +147,7 @@ export default function AdminIndex() {
     {
       label: "Total pesanan",
       value: formatNumber(orders.length),
-      detail: `Pendapatan Rp ${formatNumber(totalRevenue)}`,
+      detail: `Pendapatan terkonfirmasi Rp ${formatNumber(totalRevenue)}`,
       icon: "🛒",
       color: "bg-violet-50 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300",
     },
@@ -197,7 +216,7 @@ export default function AdminIndex() {
                       <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{order.user?.name || order.user?.email || "Pelanggan"}</p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold capitalize ${statusClass(status)}`}>{status}</span>
+                      <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${statusClass(status)}`}>{formatOrderStatus(status)}</span>
                       <span className="min-w-24 text-right text-sm font-bold text-slate-900 dark:text-white">Rp {formatNumber(order.total_price ?? 0)}</span>
                     </div>
                   </div>

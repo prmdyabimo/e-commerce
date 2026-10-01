@@ -31,7 +31,7 @@ export default function AuthForm({ mode }: { mode: Mode }) {
           localStorage.setItem("user_role", role);
           router.push(role === "admin" ? "/admin" : "/shop");
         } else {
-          setError(res?.body?.error || res?.body?.message || "Login failed");
+          setError(res?.body?.error || res?.body?.message || "Email atau kata sandi salah.");
         }
       } else {
         const res = await signUp({ name, email, password });
@@ -39,8 +39,8 @@ export default function AuthForm({ mode }: { mode: Mode }) {
         if (res?.status === 200 || res?.status === 201) {
           await Swal.fire({
             icon: "success",
-            title: "Success",
-            text: "Registration successful. Please login.",
+            title: "Pendaftaran berhasil",
+            text: "Silakan masuk menggunakan akun Anda.",
             timer: 1600,
             showConfirmButton: false,
           });
@@ -48,11 +48,11 @@ export default function AuthForm({ mode }: { mode: Mode }) {
           router.push("/login");
         } else {
           const message =
-            res?.body?.error || res?.body?.message || "Registration failed";
+            res?.body?.error || res?.body?.message || "Pendaftaran gagal.";
           setError(message);
           await Swal.fire({
             icon: "error",
-            title: "Registration failed",
+            title: "Pendaftaran gagal",
             text: message,
           });
         }
@@ -70,12 +70,12 @@ export default function AuthForm({ mode }: { mode: Mode }) {
     <form onSubmit={onSubmit} className="space-y-4">
       {mode === "register" && (
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Name</label>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Nama</label>
           <input
             className="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-900 shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Your full name"
+            placeholder="Nama lengkap"
             required
           />
         </div>
@@ -88,13 +88,13 @@ export default function AuthForm({ mode }: { mode: Mode }) {
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@company.com"
+          placeholder="nama@email.com"
           required
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Password</label>
+        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Kata sandi</label>
         <div className="relative mt-1">
           <input
             className="block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 pr-10 text-slate-900 shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder-slate-500"
@@ -102,14 +102,14 @@ export default function AuthForm({ mode }: { mode: Mode }) {
             minLength={mode === "register" ? 8 : undefined}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder={mode === "register" ? "At least 8 characters" : "Enter your password"}
+            placeholder={mode === "register" ? "Minimal 8 karakter" : "Masukkan kata sandi"}
             required
           />
           <button
             type="button"
             className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 transition hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
             onClick={() => setShowPassword((v) => !v)}
-            aria-label={showPassword ? "Hide password" : "Show password"}
+            aria-label={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
           >
             {showPassword ? (
               <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
@@ -134,11 +134,11 @@ export default function AuthForm({ mode }: { mode: Mode }) {
 
       <div>
         <button
-          className="w-full rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2 text-white shadow hover:opacity-95 disabled:opacity-60"
+          className="w-full rounded-lg bg-gradient-to-r from-blue-600 to-sky-600 px-4 py-2 text-white shadow hover:opacity-95 disabled:opacity-60"
           type="submit"
           disabled={loading}
         >
-          {loading ? "Please wait..." : mode === "login" ? "Sign in" : "Create account"}
+          {loading ? "Mohon tunggu..." : mode === "login" ? "Masuk" : "Buat akun"}
         </button>
       </div>
     </form>
